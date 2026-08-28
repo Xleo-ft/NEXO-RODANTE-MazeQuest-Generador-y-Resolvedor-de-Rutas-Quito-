@@ -1,17 +1,22 @@
 <!doctype html>
 <html lang="es">
 <head>
+  <!-- Configuración básica de idioma, escala móvil y título de la aplicación. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NEXO RODANTE // Quito</title>
+  <!-- Fuentes externas usadas para diferenciar títulos y datos técnicos. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Leaflet proporciona el mapa interactivo y sus estilos base. -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="proyectofinalbfs.css">
 </head>
 <body>
+  <!-- Contenedor principal que agrupa la pantalla de bienvenida y el juego. -->
   <main class="app-shell">
+    <!-- Pantalla inicial: solo identifica al jugador antes de comenzar. -->
     <section id="welcome-screen" class="welcome-screen">
       <div class="welcome-copy">
         <p class="eyebrow">NEXO RODANTE // QUITO</p>
@@ -25,6 +30,7 @@
           </div>
         </form>
       </div>
+      <!-- Ilustración decorativa de la red de rutas; no interviene en la lógica. -->
       <div class="welcome-art" aria-hidden="true">
         <div class="radar-grid"></div>
         <div class="route-line"></div>
@@ -34,21 +40,33 @@
       </div>
     </section>
 
+    <!-- Pantalla principal: controles, mapa, modos de juego y telemetría. -->
     <section id="game-screen" class="game-screen hidden">
+      <!-- Barra superior con marca, jugador actual y salida. -->
       <header class="topbar">
         <div class="brand">NEXO<span>//</span>RODANTE <small>QUITO NETWORK</small></div>
         <div class="player-badge"><span class="status-dot"></span><span id="player-label">PILOTO</span></div>
         <button id="reset-button" class="text-button" type="button">SALIR / CAMBIAR PILOTO</button>
       </header>
       <div class="game-grid">
+        <!-- Panel izquierdo: misión, selección de modo y vehículos. -->
         <aside class="control-panel">
           <div class="section-heading"><span>01</span> MISIÓN ACTIVA</div>
           <div class="mission-card">
             <div class="mission-label">ORIGEN</div><div id="origin-label" class="place-value">--</div>
             <div class="arrow-down">↓</div>
             <div class="mission-label">DESTINO</div><div id="destination-label" class="place-value accent">--</div>
+            <!-- Estos controles permiten recalcular manualmente el trayecto dentro del juego. -->
+            <div class="route-selection">
+              <label for="origin-select">PUNTO A</label>
+              <select id="origin-select" name="origin"></select>
+              <label for="destination-select">PUNTO B</label>
+              <select id="destination-select" name="destination"></select>
+              <button id="calculate-route-button" class="secondary-button" type="button">CALCULAR RUTA</button>
+            </div>
           </div>
           <div class="section-heading"><span>02</span> MODO DE JUEGO</div>
+          <!-- Cada botón cambia la forma en que se recorre la ruta BFS. -->
           <div class="mode-list">
             <button class="mode-button active" data-mode="manual" type="button"><b>01</b><span><strong>PILOTO MANUAL</strong><small>Conduce con las flechas</small></span></button>
             <button class="mode-button" data-mode="auto" type="button"><b>02</b><span><strong>AUTOPILOTO BFS</strong><small>Observa el algoritmo resolver</small></span></button>
@@ -68,8 +86,10 @@
               <button class="skin-button" data-skin="taxi" type="button"><span class="skin-preview skin-taxi">▰</span><span><strong>TAXI</strong><small>600 PUNTOS</small></span></button>
             </div>
           </div>
-          <button id="new-route-button" class="secondary-button" type="button">↻ GENERAR NUEVA RUTA</button>
+          <!-- Este botón crea una ruta aleatoria y la inicia en el modo seleccionado. -->
+          <button id="new-route-button" class="secondary-button" type="button">↻ GENERAR RUTA ALEATORIA</button>
         </aside>
+        <!-- Panel central: mapa, ruta, marcadores, avisos y contador. -->
         <section class="map-panel">
           <div class="map-meta"><span id="mode-label">PILOTO MANUAL</span><span id="connection-label">● MAPA EN LÍNEA</span></div>
           <div id="map"></div>
@@ -78,6 +98,7 @@
           <div class="map-legend"><span><i class="legend-dot start-dot"></i> ORIGEN</span><span><i class="legend-dot end-dot"></i> DESTINO</span><span><i class="legend-line optimal-line"></i> RUTA BFS</span><span><i class="legend-line player-line"></i> MI RECORRIDO</span><span><i class="legend-nitro"></i> NITRO</span></div>
           <div id="toast" class="toast" role="status"></div>
         </section>
+        <!-- Panel derecho: datos de progreso y explicación visual de la cola BFS. -->
         <aside class="telemetry-panel">
           <div class="section-heading"><span>04</span> TELEMETRÍA</div>
           <div class="telemetry-row"><span>TIEMPO</span><strong id="time-value">00:00</strong></div>
@@ -89,9 +110,11 @@
         </aside>
       </div>
     </section>
+    <!-- Modal final con el resumen del recorrido y opción para continuar. -->
     <div id="result-modal" class="modal hidden"><div class="result-card"><p class="eyebrow">TRANSMISIÓN COMPLETADA</p><h2 id="result-title">RUTA CONCLUIDA</h2><p id="result-message"></p><div class="result-stats"><div><span>TIEMPO</span><strong id="result-time">--</strong></div><div><span>MOVIMIENTO</span><strong id="result-steps">--</strong></div><div><span>ÓPTIMO BFS</span><strong id="result-optimal">--</strong></div></div><button id="continue-button" class="primary-button" type="button">CONTINUAR <span>→</span></button></div></div>
   </main>
+  <!-- Leaflet debe cargarse antes del archivo JavaScript de la aplicación. -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js"></script>
+  <script src="proyectofinalbfs.js"></script>
 </body>
 </html>

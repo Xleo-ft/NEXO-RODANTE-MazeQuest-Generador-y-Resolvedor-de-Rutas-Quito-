@@ -1,3 +1,5 @@
+
+// Catálogo de lugares: guarda el nombre visible y la posición de cada destino.
 const lugares = {
 	ejido: { nombre: 'Parque El Ejido', latitud: -0.2015, longitud: -78.4974 },
 	alameda: { nombre: 'Parque La Alameda', latitud: -0.2135, longitud: -78.5002 },
@@ -13,6 +15,7 @@ const lugares = {
 	sangolqui: { nombre: 'Sangolquí', latitud: -0.3304, longitud: -78.4525 }
 };
 
+// Grafo educativo: conecta los destinos que BFS puede visitar durante el cálculo.
 const grafo = {
 	ejido: ['alameda', 'mariscal'],
 	alameda: ['ejido', 'plaza', 'mariscal'],
@@ -31,6 +34,7 @@ const grafo = {
 // Obtiene un elemento de la interfaz a partir de su identificador HTML.
 const obtenerElemento = (identificador) => document.getElementById(identificador);
 
+// Referencias a capas y marcadores que Leaflet actualiza durante la partida.
 let mapa;
 let marcadorJugador;
 let marcadorMaquina;
@@ -39,6 +43,10 @@ let marcadorDestino;
 let marcadoresNitro = [];
 let lineaRuta;
 let lineaOptima;
+// Identifica la consulta de calles vigente para ignorar respuestas antiguas.
+let solicitudRuta = 0;
+let geometriaRutaCalles;
+// Variables que representan la misión, el jugador y su progreso actual.
 let nombreJugador = '';
 let modo = 'manual';
 let origen;
@@ -74,7 +82,8 @@ let carreraIniciada = false;
 let vehiculoDetenido = false;
 let pulsacionesReparacion = 0;
 
-const velocidadMovimiento = 0.00008;
+// Valores de configuración; la velocidad base permite recorridos más ágiles.
+const velocidadMovimiento = 0.00010;
 const intervaloMovimiento = 80;
 const duracionNitro = 5000;
 const cantidadNitros = 4;
@@ -83,7 +92,9 @@ const metrosPorGrado = 111000;
 const velocidadMaquina = velocidadMovimiento * metrosPorGrado;
 const velocidadAutopiloto = 4.5;
 const pulsacionesNecesarias = 5;
+const servicioRutas = 'https://router.project-osrm.org/route/v1/driving';
 
+// Costos usados por la tienda para desbloquear o equipar vehículos.
 const costosVehiculos = {
 	clasico: 0,
 	turbo: 200,
@@ -91,6 +102,7 @@ const costosVehiculos = {
 	taxi: 600
 };
 
+// Guarda en el navegador los vehículos que el jugador ya compró.
 let vehiculosDesbloqueados = JSON.parse(
 	localStorage.getItem('vehiculos-desbloqueados') || '["clasico"]'
 );
@@ -127,8 +139,8 @@ function buscarAnchura(inicio, fin) {
 	return camino;
 }
 
-// Genera un origen y un destino válidos, y prepara una nueva partida.
-function generarRutaAleatoria() {
+// Reinicia el recorrido y prepara una partida con los puntos indicados.
+function generarRuta(origenElegido, destinoElegido) {
 	clearInterval(temporizadorAutomatico);
 	clearInterval(temporizadorMaquina);
 	clearInterval(temporizadorMovimiento);
@@ -160,18 +172,10 @@ function generarRutaAleatoria() {
 	jugadorDetenidoHasta = 0;
 	controlesInvertidosHasta = 0;
 
-	const claves = Object.keys(lugares);
-	let inicioRuta;
-	let finRuta;
-
-	do {
-		inicioRuta = claves[Math.floor(Math.random() * claves.length)];
-		finRuta = claves[Math.floor(Math.random() * claves.length)];
-	} while (inicioRuta === finRuta || buscarAnchura(inicioRuta, finRuta).length < 3);
-
-	origen = inicioRuta;
-	destino = finRuta;
+	origen = origenElegido;
+	destino = destinoElegido;
 	caminoOptimo = buscarAnchura(origen, destino);
+	geometriaRutaCalles = undefined;
 	actual = origen;
 	caminoJugador = [origen];
 	posicionJugador = obtenerPunto(origen);
@@ -196,6 +200,35 @@ function generarRutaAleatoria() {
 		colocarNitro();
 		iniciarCuentaRegresiva();
 	}
+}
+
+// Permite elegir una ruta nueva desde la tarjeta de misión.
+function calcularRutaSeleccionada() {
+	const origenElegido = obtenerElemento('origin-select').value;
+	const destinoElegido = obtenerElemento('destination-select').value;
+
+	if (!origenElegido || !destinoElegido || origenElegido === destinoElegido) {
+		mostrarAviso('Elige dos puntos diferentes para calcular la ruta');
+		return;
+	}
+
+	generarRuta(origenElegido, destinoElegido);
+}
+
+// Crea una ruta aleatoria válida y la inicia en manual, automático o versus.
+function generarRutaAutomatica() {
+	const lugaresDisponibles = Object.keys(lugares);
+	let origenAutomatico;
+	let destinoAutomatico;
+
+	do {
+		origenAutomatico = lugaresDisponibles[Math.floor(Math.random() * lugaresDisponibles.length)];
+		destinoAutomatico = lugaresDisponibles[Math.floor(Math.random() * lugaresDisponibles.length)];
+	} while (origenAutomatico === destinoAutomatico);
+
+	obtenerElemento('origin-select').value = origenAutomatico;
+	obtenerElemento('destination-select').value = destinoAutomatico;
+	generarRuta(origenAutomatico, destinoAutomatico);
 }
 
 // Avanza una posición hacia otra usando una distancia fija en metros.
@@ -292,6 +325,31 @@ function obtenerPunto(identificador) {
 	return [lugares[identificador].latitud, lugares[identificador].longitud];
 }
 
+// Pide a OSRM la geometría de las calles para evitar atravesar edificios o montañas.
+async function cargarRutaPorCalles() {
+	const solicitudActual = ++solicitudRuta;
+	const puntoOrigen = obtenerPunto(origen);
+	const puntoDestino = obtenerPunto(destino);
+	const coordenadas = `${puntoOrigen[1]},${puntoOrigen[0]};${puntoDestino[1]},${puntoDestino[0]}`;
+
+	try {
+		const respuesta = await fetch(`${servicioRutas}/${coordenadas}?overview=full&geometries=geojson`);
+		if (!respuesta.ok) throw new Error('No se pudo consultar el servicio de calles');
+
+		const datos = await respuesta.json();
+		if (solicitudActual !== solicitudRuta || !datos.routes?.length) return;
+
+		geometriaRutaCalles = datos.routes[0].geometry.coordinates.map(([longitud, latitud]) => [latitud, longitud]);
+		lineaOptima.setLatLngs(geometriaRutaCalles);
+		mapa.fitBounds(lineaOptima.getBounds(), { padding: [70, 70] });
+		mostrarAviso('Ruta calculada por calles reales');
+	} catch (error) {
+		if (solicitudActual === solicitudRuta) {
+			mostrarAviso('No se pudo cargar la ruta por calles; se muestra la ruta BFS');
+		}
+	}
+}
+
 // Dibuja las rutas y actualiza los marcadores A, B y del vehículo.
 function dibujarRuta() {
 	if (lineaRuta) mapa.removeLayer(lineaRuta);
@@ -301,7 +359,7 @@ function dibujarRuta() {
 	if (marcadorDestino) mapa.removeLayer(marcadorDestino);
 	if (marcadorMaquina) mapa.removeLayer(marcadorMaquina);
 
-	lineaOptima = L.polyline(caminoOptimo.map(obtenerPunto), {
+	lineaOptima = L.polyline(geometriaRutaCalles || caminoOptimo.map(obtenerPunto), {
 		color: '#c7f36b',
 		weight: 5,
 		opacity: 0.9,
@@ -353,6 +411,7 @@ function dibujarRuta() {
 	mapa.fitBounds(L.latLngBounds(caminoOptimo.map(obtenerPunto)), {
 		padding: [70, 70]
 	});
+	cargarRutaPorCalles();
 }
 
 // Actualiza la información de la misión, posición, pasos y puntuación.
@@ -689,13 +748,24 @@ function mostrarAviso(mensaje) {
 	}, 2800);
 }
 
+// Texto que se muestra en la barra superior según la modalidad activa.
 const etiquetasModo = {
 	manual: 'PILOTO MANUAL',
 	auto: 'AUTOPILOTO BFS',
 	versus: 'HUMANO VS BFS'
 };
 
+// Genera las opciones de los selectores usando el catálogo único de lugares.
+const opcionesLugar = Object.entries(lugares)
+	.map(([identificador, lugar]) => `<option value="${identificador}">${lugar.nombre}</option>`)
+	.join('');
+obtenerElemento('origin-select').innerHTML = opcionesLugar;
+obtenerElemento('destination-select').innerHTML = opcionesLugar;
+obtenerElemento('origin-select').value = 'ejido';
+obtenerElemento('destination-select').value = 'carolina';
 
+
+// Inicia la aplicación: oculta la bienvenida, prepara Leaflet y crea la primera ruta.
 obtenerElemento('start-form').addEventListener('submit', (evento) => {
 	evento.preventDefault();
 	nombreJugador = obtenerElemento('player-name').value.trim();
@@ -710,17 +780,27 @@ obtenerElemento('start-form').addEventListener('submit', (evento) => {
 		inicializarMapa();
 	}
 
-	generarRutaAleatoria();
+	generarRutaAutomatica();
 });
 
+// Limpia la validación anterior cuando el usuario cambia los puntos A o B.
+document.querySelectorAll('#origin-select, #destination-select').forEach((selector) => {
+	selector.addEventListener('change', () => {
+		obtenerElemento('destination-select').setCustomValidity('');
+	});
+});
+
+// Conecta los controles principales con sus acciones de juego.
 obtenerElemento('reset-button').addEventListener('click', () => location.reload());
-obtenerElemento('new-route-button').addEventListener('click', generarRutaAleatoria);
+obtenerElemento('calculate-route-button').addEventListener('click', calcularRutaSeleccionada);
+obtenerElemento('new-route-button').addEventListener('click', generarRutaAutomatica);
 
 obtenerElemento('continue-button').addEventListener('click', () => {
 	obtenerElemento('result-modal').classList.add('hidden');
-	generarRutaAleatoria();
+	generarRuta(origen, destino);
 });
 
+// Cambiar de modalidad reinicia el recorrido actual sin cambiar origen ni destino.
 document.querySelectorAll('.mode-button').forEach((button) => {
 	button.addEventListener('click', () => {
 		document.querySelectorAll('.mode-button').forEach((item) => {
@@ -730,14 +810,16 @@ document.querySelectorAll('.mode-button').forEach((button) => {
 		button.classList.add('active');
 		modo = button.dataset.mode;
 		obtenerElemento('mode-label').textContent = etiquetasModo[modo];
-		generarRutaAleatoria();
+		generarRuta(origen, destino);
 	});
 });
 
+// Cada vehículo de la tienda puede equiparse mediante su atributo data-skin.
 document.querySelectorAll('.skin-button').forEach((boton) => {
 	boton.addEventListener('click', () => comprarVehiculo(boton.dataset.skin));
 });
 
+// Controla flechas, SHIFT y R para mover, activar nitro o reparar el vehículo.
 document.addEventListener('keydown', (evento) => {
 	const teclasDeMovimiento = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
 
@@ -758,6 +840,7 @@ document.addEventListener('keydown', (evento) => {
 	iniciarMovimientoLibre();
 });
 
+// Libera las flechas al soltarlas para detener el movimiento continuo.
 document.addEventListener('keyup', (evento) => {
 	const teclasDeMovimiento = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
 
