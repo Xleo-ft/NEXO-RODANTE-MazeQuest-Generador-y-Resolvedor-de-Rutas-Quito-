@@ -94,7 +94,14 @@
           <div class="map-meta"><span id="mode-label">PILOTO MANUAL</span><span id="connection-label">● MAPA EN LÍNEA</span></div>
           <div id="map"></div>
           <div id="race-countdown" class="race-countdown hidden">5</div>
-          <div id="obstacle-alert" class="obstacle-alert hidden" role="alert"><strong>¡OBSTÁCULO!</strong><span>Atención</span></div>
+          <div id="obstacle-alert" class="obstacle-alert hidden" role="alert">
+            <div class="obstacle-alert-header">
+              <span class="obstacle-icon">⚠️</span>
+              <strong id="obstacle-title">¡AVISO! VEHÍCULO DETENIDO</strong>
+            </div>
+            <p id="obstacle-message">Tu vehículo se detuvo. Presiona R cinco veces para continuar</p>
+            <div id="obstacle-action" class="obstacle-action-row"></div>
+          </div>
           <div class="map-legend"><span><i class="legend-dot start-dot"></i> ORIGEN</span><span><i class="legend-dot end-dot"></i> DESTINO</span><span><i class="legend-line optimal-line"></i> RUTA BFS</span><span><i class="legend-line player-line"></i> MI RECORRIDO</span><span><i class="legend-nitro"></i> NITRO</span></div>
           <div id="toast" class="toast" role="status"></div>
         </section>

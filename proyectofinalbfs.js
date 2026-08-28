@@ -46,6 +46,12 @@ let lineaOptima;
 // Identifica la consulta de calles vigente para ignorar respuestas antiguas.
 let solicitudRuta = 0;
 let geometriaRutaCalles;
+// Evita que los vehículos se muevan antes de recibir la ruta de calles.
+let rutaCallesLista = false;
+// Índices independientes para avanzar por los puntos de la calle en cada competidor.
+let indiceRutaJugador = 0;
+let indiceCalleAutopiloto = 0;
+let indiceCalleMaquina = 0;
 // Variables que representan la misión, el jugador y su progreso actual.
 let nombreJugador = '';
 let modo = 'manual';
@@ -68,7 +74,6 @@ let teclasPresionadas = new Set();
 let temporizadorMovimiento;
 let temporizadorCarrera;
 let posicionMaquina;
-let indiceCaminoMaquina = 0;
 let nitroDisponible = 0;
 let nitroEnMapa = false;
 let nitroActivo = false;
@@ -77,6 +82,7 @@ let jugadorDetenidoHasta = 0;
 let controlesInvertidosHasta = 0;
 let temporizadorObstaculo;
 let temporizadorAlertaObstaculo;
+let temporizadorCuentaAviso;
 let temporizadorCuentaRegresiva;
 let carreraIniciada = false;
 let vehiculoDetenido = false;
@@ -92,6 +98,9 @@ const metrosPorGrado = 111000;
 const velocidadMaquina = velocidadMovimiento * metrosPorGrado;
 const velocidadAutopiloto = 4.5;
 const pulsacionesNecesarias = 5;
+// Tiempo de espera del primer obstáculo y de los obstáculos siguientes.
+const demoraPrimerObstaculo = 1500;
+const intervaloObstaculos = 20000;
 const servicioRutas = 'https://router.project-osrm.org/route/v1/driving';
 
 // Costos usados por la tienda para desbloquear o equipar vehículos.
@@ -148,20 +157,20 @@ function generarRuta(origenElegido, destinoElegido) {
 	clearTimeout(temporizadorNitro);
 	clearTimeout(temporizadorObstaculo);
 	clearTimeout(temporizadorAlertaObstaculo);
+	clearInterval(temporizadorCuentaAviso);
 	clearInterval(temporizadorCuentaRegresiva);
 	teclasPresionadas.clear();
 	const contadorCarrera = obtenerElemento('race-countdown');
-	const alertaObstaculo = obtenerElemento('obstacle-alert');
 	contadorCarrera.classList.add('hidden');
 	contadorCarrera.textContent = '5';
-	alertaObstaculo.classList.remove('active');
-	alertaObstaculo.classList.add('hidden');
+	ocultarObstaculo();
 	temporizadorMovimiento = undefined;
 	temporizadorCarrera = undefined;
 	marcadoresNitro.forEach((marcador) => mapa.removeLayer(marcador));
 	marcadoresNitro = [];
 	temporizadorObstaculo = undefined;
 	temporizadorAlertaObstaculo = undefined;
+	temporizadorCuentaAviso = undefined;
 	temporizadorCuentaRegresiva = undefined;
 	carreraIniciada = modo !== 'versus';
 	vehiculoDetenido = false;
@@ -176,12 +185,15 @@ function generarRuta(origenElegido, destinoElegido) {
 	destino = destinoElegido;
 	caminoOptimo = buscarAnchura(origen, destino);
 	geometriaRutaCalles = undefined;
+	rutaCallesLista = false;
+	indiceRutaJugador = 0;
+	indiceCalleAutopiloto = 0;
+	indiceCalleMaquina = 0;
 	actual = origen;
 	caminoJugador = [origen];
 	posicionJugador = obtenerPunto(origen);
 	recorridoLibre = [posicionJugador.slice()];
 	posicionMaquina = obtenerPunto(origen);
-	indiceCaminoMaquina = 0;
 	pasosJugador = 0;
 	indiceMaquina = 0;
 	inicioPartida = Date.now();
@@ -325,6 +337,38 @@ function obtenerPunto(identificador) {
 	return [lugares[identificador].latitud, lugares[identificador].longitud];
 }
 
+// Busca el punto de calle más cercano a un vehículo para cambiar de ruta sin saltos.
+function encontrarCalleMasCercana(trayectoria, posicion) {
+	return trayectoria.reduce((indiceCercano, punto, indice) => (
+		mapa.distance(posicion, punto) < mapa.distance(posicion, trayectoria[indiceCercano])
+			? indice
+			: indiceCercano
+	), 0);
+}
+
+// Avanza por una trayectoria ordenada sin atravesar segmentos ni invertir la dirección.
+function avanzarPorTrayectoria(posicion, trayectoria, indice, velocidad) {
+	let indiceActual = indice;
+	let posicionActual = posicion.slice();
+	let distanciaDisponible = velocidad;
+
+	while (indiceActual < trayectoria.length - 1 && distanciaDisponible > 0) {
+		const siguientePunto = trayectoria[indiceActual + 1];
+		const distancia = mapa.distance(posicionActual, siguientePunto);
+
+		if (distancia <= distanciaDisponible) {
+			posicionActual = siguientePunto.slice();
+			distanciaDisponible -= distancia;
+			indiceActual += 1;
+		} else {
+			posicionActual = avanzarHacia(posicionActual, siguientePunto, distanciaDisponible);
+			distanciaDisponible = 0;
+		}
+	}
+
+	return { posicion: posicionActual, indice: indiceActual };
+}
+
 // Pide a OSRM la geometría de las calles para evitar atravesar edificios o montañas.
 async function cargarRutaPorCalles() {
 	const solicitudActual = ++solicitudRuta;
@@ -340,12 +384,22 @@ async function cargarRutaPorCalles() {
 		if (solicitudActual !== solicitudRuta || !datos.routes?.length) return;
 
 		geometriaRutaCalles = datos.routes[0].geometry.coordinates.map(([longitud, latitud]) => [latitud, longitud]);
+		rutaCallesLista = true;
+		indiceCalleAutopiloto = encontrarCalleMasCercana(geometriaRutaCalles, posicionJugador);
+		indiceCalleMaquina = encontrarCalleMasCercana(geometriaRutaCalles, posicionMaquina);
+		indiceRutaJugador = encontrarCalleMasCercana(geometriaRutaCalles, posicionJugador);
 		lineaOptima.setLatLngs(geometriaRutaCalles);
 		mapa.fitBounds(lineaOptima.getBounds(), { padding: [70, 70] });
 		mostrarAviso('Ruta calculada por calles reales');
 	} catch (error) {
 		if (solicitudActual === solicitudRuta) {
-			mostrarAviso('No se pudo cargar la ruta por calles; se muestra la ruta BFS');
+			// Sin una respuesta real no se dibuja ni se recorre una línea falsa.
+			rutaCallesLista = false;
+			clearInterval(temporizadorAutomatico);
+			clearInterval(temporizadorCarrera);
+			clearInterval(temporizadorCuentaRegresiva);
+			obtenerElemento('race-countdown').classList.add('hidden');
+			mostrarAviso('No se pudo cargar la ruta por calles. Revisa la conexión e inténtalo de nuevo');
 		}
 	}
 }
@@ -359,7 +413,8 @@ function dibujarRuta() {
 	if (marcadorDestino) mapa.removeLayer(marcadorDestino);
 	if (marcadorMaquina) mapa.removeLayer(marcadorMaquina);
 
-	lineaOptima = L.polyline(geometriaRutaCalles || caminoOptimo.map(obtenerPunto), {
+	// La ruta verde aparece cuando OSRM entrega la geometría real de las calles.
+	lineaOptima = L.polyline(geometriaRutaCalles || [], {
 		color: '#c7f36b',
 		weight: 5,
 		opacity: 0.9,
@@ -486,26 +541,41 @@ function actualizarTiempo() {
 	obtenerElemento('time-value').textContent = `${minutos}:${segundos}`;
 }
 
-// Mueve el vehículo libremente por el mapa a una velocidad controlada.
+// Mueve el vehículo manual por la ruta de calles, siempre en el sentido A hacia B.
 function moverJugadorLibre() {
 	if ((modo !== 'manual' && modo !== 'versus') || !posicionJugador) return;
 	if (modo === 'versus' && !carreraIniciada) return;
+	if (!rutaCallesLista) return;
 
 	if (vehiculoDetenido || Date.now() < jugadorDetenidoHasta) return;
 
 	if (!teclasPresionadas.size) return;
 
-	const nuevaPosicion = [...posicionJugador];
-	const velocidadActual = nitroActivo ? velocidadNitro : velocidadMovimiento;
-	const invertirControles = Date.now() < controlesInvertidosHasta;
-	const factorDireccion = invertirControles ? -1 : 1;
+	// Invertir controles si está activa la desventaja en versus
+	const controlesInvertidos = modo === 'versus' && Date.now() < controlesInvertidosHasta;
+	let debeAvanzar = false;
 
-	if (teclasPresionadas.has('ArrowUp')) nuevaPosicion[0] += velocidadActual * factorDireccion;
-	if (teclasPresionadas.has('ArrowDown')) nuevaPosicion[0] -= velocidadActual * factorDireccion;
-	if (teclasPresionadas.has('ArrowLeft')) nuevaPosicion[1] -= velocidadActual * factorDireccion;
-	if (teclasPresionadas.has('ArrowRight')) nuevaPosicion[1] += velocidadActual * factorDireccion;
+	if (!controlesInvertidos) {
+		debeAvanzar = teclasPresionadas.has('ArrowUp') || teclasPresionadas.has('ArrowRight') || teclasPresionadas.has('ArrowLeft') || teclasPresionadas.has('ArrowDown');
+	} else {
+		// Controles invertidos: solo las teclas contrarias (Abajo o Izquierda) mueven el vehículo
+		debeAvanzar = teclasPresionadas.has('ArrowDown') || teclasPresionadas.has('ArrowLeft');
+	}
 
-	posicionJugador = nuevaPosicion;
+	if (!debeAvanzar) return;
+
+	// Convierte la velocidad expresada en grados a metros, unidad usada por Leaflet.
+	const velocidadActual = (nitroActivo ? velocidadNitro : velocidadMovimiento) * metrosPorGrado;
+	const trayectoria = geometriaRutaCalles;
+	if (!trayectoria?.length) return;
+	const avance = avanzarPorTrayectoria(
+		posicionJugador,
+		trayectoria,
+		indiceRutaJugador,
+		velocidadActual
+	);
+	indiceRutaJugador = avance.indice;
+	posicionJugador = avance.posicion;
 
 	pasosJugador += 1;
 	recorridoLibre.push(posicionJugador.slice());
@@ -559,22 +629,25 @@ function activarNitro() {
 	}, duracionNitro);
 }
 
-// Mueve la máquina por la ruta BFS respetando la misma velocidad base.
+// Mueve la máquina exclusivamente por la ruta real de calles.
 function moverMaquina() {
 	if (modo !== 'versus' || !carreraIniciada || !posicionMaquina) return;
+	if (!rutaCallesLista) return;
 
-	const siguienteLugar = caminoOptimo[indiceCaminoMaquina + 1];
-	if (!siguienteLugar) return;
-
-	const objetivo = obtenerPunto(siguienteLugar);
-	posicionMaquina = avanzarHacia(posicionMaquina, objetivo, velocidadMaquina);
+	// La máquina solo puede avanzar sobre la geometría real de calles.
+	const trayectoria = geometriaRutaCalles;
+	if (!trayectoria?.length) return;
+	const avance = avanzarPorTrayectoria(
+		posicionMaquina,
+		trayectoria,
+		indiceCalleMaquina,
+		velocidadMaquina
+	);
+	posicionMaquina = avance.posicion;
+	indiceCalleMaquina = avance.indice;
 	marcadorMaquina.setLatLng(posicionMaquina);
 
-	if (mapa.distance(posicionMaquina, objetivo) < 1) {
-		indiceCaminoMaquina += 1;
-	}
-
-	if (indiceCaminoMaquina >= caminoOptimo.length - 1) {
+	if (avance.indice >= trayectoria.length - 1) {
 		clearInterval(temporizadorCarrera);
 		finalizarPartida(false);
 	}
@@ -582,43 +655,124 @@ function moverMaquina() {
 
 // Aplica un obstáculo aleatorio que detiene o invierte temporalmente al jugador.
 function activarObstaculo() {
-	if (modo !== 'versus') return;
+	if (modo !== 'versus' || !carreraIniciada) return;
 
 	const detener = Math.random() < 0.5;
 
 	if (detener) {
 		vehiculoDetenido = true;
 		pulsacionesReparacion = 0;
-		mostrarObstaculo('¡OBSTÁCULO! VEHÍCULO DETENIDO', 'Pulsa R cinco veces para continuar', 0);
+		mostrarObstaculoDetenido();
 	} else {
 		controlesInvertidosHasta = Date.now() + 4000;
-		mostrarObstaculo('¡OBSTÁCULO! TECLAS INVERTIDAS', 'Tus controles cambiarán durante 4 segundos', 4000);
+		mostrarObstaculoInvertido(4000);
 	}
 
 	programarObstaculo();
 }
 
-// Presenta en pantalla el tipo y la duración del obstáculo activo.
-function mostrarObstaculo(titulo, detalle, duracion) {
-	const alerta = obtenerElemento('obstacle-alert');
+// Presenta el recuadro visual de vehículo detenido y el progreso de reparación con R.
+function mostrarObstaculoDetenido() {
+	clearInterval(temporizadorCuentaAviso);
+	clearTimeout(temporizadorAlertaObstaculo);
 
-	alerta.querySelector('strong').textContent = titulo;
-	alerta.querySelector('span').textContent = detalle;
+	const alerta = obtenerElemento('obstacle-alert');
+	alerta.classList.remove('alert-inverted');
+	alerta.classList.add('alert-stopped');
+
+	const icono = alerta.querySelector('.obstacle-icon');
+	const titulo = alerta.querySelector('#obstacle-title') || alerta.querySelector('strong');
+	const mensaje = alerta.querySelector('#obstacle-message') || alerta.querySelector('p');
+	const accion = alerta.querySelector('#obstacle-action') || alerta.querySelector('.obstacle-action-row');
+
+	if (icono) icono.textContent = '⚠️';
+	if (titulo) titulo.textContent = '¡AVISO! VEHÍCULO DETENIDO';
+	if (mensaje) mensaje.textContent = 'Tu vehículo sufrió una falla mecánica. ¡Presiona la tecla R para repararlo!';
+	if (accion) {
+		accion.innerHTML = `
+			<div class="key-pill pulse"><kbd>R</kbd> <span>PULSA R</span></div>
+			<div class="obstacle-progress-bar">
+				<div id="obstacle-progress-fill" class="obstacle-progress-fill" style="width: 0%"></div>
+			</div>
+			<span id="obstacle-counter" class="obstacle-counter">0 / ${pulsacionesNecesarias}</span>
+		`;
+	}
+
 	alerta.classList.remove('hidden');
 	alerta.classList.add('active');
+	mostrarAviso('¡Vehículo averiado! Presiona la tecla R cinco veces');
+}
+
+// Presenta el recuadro visual de teclas invertidas con su contador regresivo.
+function mostrarObstaculoInvertido(duracionMs = 4000) {
+	clearInterval(temporizadorCuentaAviso);
 	clearTimeout(temporizadorAlertaObstaculo);
-	if (duracion > 0) {
-		temporizadorAlertaObstaculo = setTimeout(() => {
-			alerta.classList.remove('active');
-			alerta.classList.add('hidden');
-		}, duracion);
+
+	const alerta = obtenerElemento('obstacle-alert');
+	alerta.classList.remove('alert-stopped');
+	alerta.classList.add('alert-inverted');
+
+	const icono = alerta.querySelector('.obstacle-icon');
+	const titulo = alerta.querySelector('#obstacle-title') || alerta.querySelector('strong');
+	const mensaje = alerta.querySelector('#obstacle-message') || alerta.querySelector('p');
+	const accion = alerta.querySelector('#obstacle-action') || alerta.querySelector('.obstacle-action-row');
+
+	if (icono) icono.textContent = '🔄';
+	if (titulo) titulo.textContent = '¡AVISO! TECLAS INVERTIDAS';
+	if (mensaje) mensaje.textContent = '¡Tus controles han sido saboteados! Usa las flechas opuestas para avanzar:';
+	if (accion) {
+		accion.innerHTML = `
+			<div class="key-pill"><kbd>↓</kbd> <kbd>←</kbd> <span>AVANZAR</span></div>
+			<span id="obstacle-timer" class="obstacle-timer">⏳ ${Math.ceil(duracionMs / 1000)}s</span>
+		`;
+	}
+
+	alerta.classList.remove('hidden');
+	alerta.classList.add('active');
+	mostrarAviso('¡Controles invertidos! Usa flecha abajo o izquierda');
+
+	let segundosRestantes = Math.ceil(duracionMs / 1000);
+	temporizadorCuentaAviso = setInterval(() => {
+		segundosRestantes -= 1;
+		const elTimer = obtenerElemento('obstacle-timer');
+		if (elTimer && segundosRestantes > 0) {
+			elTimer.textContent = `⏳ ${segundosRestantes}s`;
+		}
+		if (segundosRestantes <= 0) {
+			clearInterval(temporizadorCuentaAviso);
+		}
+	}, 1000);
+
+	temporizadorAlertaObstaculo = setTimeout(() => {
+		ocultarObstaculo();
+		mostrarAviso('¡Controles normalizados!');
+	}, duracionMs);
+}
+
+// Oculta el recuadro del obstáculo y limpia sus temporizadores.
+function ocultarObstaculo() {
+	clearInterval(temporizadorCuentaAviso);
+	clearTimeout(temporizadorAlertaObstaculo);
+	const alerta = obtenerElemento('obstacle-alert');
+	if (alerta) {
+		alerta.classList.remove('active');
+		alerta.classList.add('hidden');
 	}
 }
 
-// Programa el siguiente obstáculo 20 segundos después del anterior.
-function programarObstaculo() {
+// Presenta en pantalla el tipo y la duración del obstáculo activo (función de compatibilidad).
+function mostrarObstaculo(titulo, detalle, duracion) {
+	if (duracion === 0) {
+		mostrarObstaculoDetenido();
+	} else {
+		mostrarObstaculoInvertido(duracion || 4000);
+	}
+}
+
+// Programa el siguiente obstáculo usando una espera corta para el primero.
+function programarObstaculo(demora = intervaloObstaculos) {
 	clearTimeout(temporizadorObstaculo);
-	temporizadorObstaculo = setTimeout(activarObstaculo, 20000);
+	temporizadorObstaculo = setTimeout(activarObstaculo, demora);
 }
 
 // Registra una pulsación de R y libera el vehículo al completar la reparación.
@@ -626,19 +780,23 @@ function repararVehiculo() {
 	if (!vehiculoDetenido || modo !== 'versus') return;
 
 	pulsacionesReparacion += 1;
+	const porcentaje = Math.min(100, Math.round((pulsacionesReparacion / pulsacionesNecesarias) * 100));
+	const progressFill = obtenerElemento('obstacle-progress-fill');
+	const counter = obtenerElemento('obstacle-counter');
+
+	if (progressFill) progressFill.style.width = `${porcentaje}%`;
+	if (counter) counter.textContent = `${pulsacionesReparacion} / ${pulsacionesNecesarias}`;
+
 	const faltan = pulsacionesNecesarias - pulsacionesReparacion;
 
 	if (faltan > 0) {
-		mostrarObstaculo('REPARANDO VEHÍCULO', `Pulsaciones R: ${pulsacionesReparacion}/${pulsacionesNecesarias}`, 0);
 		return;
 	}
 
 	vehiculoDetenido = false;
 	pulsacionesReparacion = 0;
-	const alerta = obtenerElemento('obstacle-alert');
-	alerta.classList.remove('active');
-	alerta.classList.add('hidden');
-	mostrarAviso('Vehículo reparado. ¡Continúa la carrera!');
+	ocultarObstaculo();
+	mostrarAviso('¡Vehículo reparado! Continúa la carrera');
 }
 
 // Inicia el desplazamiento continuo mientras se mantiene una flecha pulsada.
@@ -665,14 +823,13 @@ function finalizarPartida(gano) {
 	clearInterval(temporizadorMovimiento);
 	clearInterval(temporizadorCarrera);
 	clearInterval(temporizadorCuentaRegresiva);
+	clearInterval(temporizadorCuentaAviso);
 	clearTimeout(temporizadorObstaculo);
 	clearTimeout(temporizadorAlertaObstaculo);
 	teclasPresionadas.clear();
 	temporizadorMovimiento = undefined;
 	carreraIniciada = false;
-	const alertaObstaculo = obtenerElemento('obstacle-alert');
-	alertaObstaculo.classList.remove('active');
-	alertaObstaculo.classList.add('hidden');
+	ocultarObstaculo();
 
 	const segundos = Math.floor((Date.now() - inicioPartida) / 1000);
 	const pasos = modo === 'manual' ? pasosJugador : caminoJugador.length - 1;
@@ -699,27 +856,28 @@ function finalizarPartida(gano) {
 	obtenerElemento('result-modal').classList.remove('hidden');
 }
 
-// Avanza suavemente por el camino óptimo con una velocidad lenta y constante.
+// Avanza suavemente por las calles calculadas hasta alcanzar el destino.
 function ejecutarAutopiloto() {
-	let indiceCamino = 0;
-
 	temporizadorAutomatico = setInterval(() => {
-		if (indiceCamino >= caminoOptimo.length - 1) {
+		if (!rutaCallesLista) return;
+		// El autopiloto recorre la geometría de calles, no una línea entre nodos.
+		const trayectoria = geometriaRutaCalles;
+		if (!trayectoria?.length) return;
+		const avance = avanzarPorTrayectoria(
+			posicionJugador,
+			trayectoria,
+			indiceCalleAutopiloto,
+			velocidadAutopiloto
+		);
+		posicionJugador = avance.posicion;
+		indiceCalleAutopiloto = avance.indice;
+		marcadorJugador.setLatLng(posicionJugador);
+
+		if (avance.indice >= trayectoria.length - 1) {
 			clearInterval(temporizadorAutomatico);
 			actual = destino;
 			finalizarPartida(true);
 			return;
-		}
-
-		const siguienteLugar = caminoOptimo[indiceCamino + 1];
-		const objetivo = obtenerPunto(siguienteLugar);
-		posicionJugador = avanzarHacia(posicionJugador, objetivo, velocidadAutopiloto);
-		marcadorJugador.setLatLng(posicionJugador);
-
-		if (mapa.distance(posicionJugador, objetivo) < 1) {
-			indiceCamino += 1;
-			actual = caminoOptimo[indiceCamino];
-			caminoJugador.push(actual);
 		}
 
 		actualizarPanel();
@@ -730,11 +888,10 @@ function ejecutarAutopiloto() {
 function ejecutarMaquina() {
 	carreraIniciada = true;
 	posicionMaquina = obtenerPunto(origen);
-	indiceCaminoMaquina = 0;
 	marcadorMaquina.setLatLng(posicionMaquina);
 	clearInterval(temporizadorCarrera);
 	mostrarAviso(`BFS: ${caminoOptimo.length - 1} pasos calculados`);
-	programarObstaculo();
+	programarObstaculo(demoraPrimerObstaculo);
 	temporizadorCarrera = setInterval(moverMaquina, intervaloMovimiento);
 }
 
