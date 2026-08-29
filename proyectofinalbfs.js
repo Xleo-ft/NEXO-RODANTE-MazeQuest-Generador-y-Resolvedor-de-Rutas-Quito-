@@ -1,34 +1,34 @@
 
 // Catálogo de lugares: guarda el nombre visible y la posición de cada destino.
 const lugares = {
-	ejido: { nombre: 'Parque El Ejido', latitud: -0.2015, longitud: -78.4974 },
-	alameda: { nombre: 'Parque La Alameda', latitud: -0.2135, longitud: -78.5002 },
-	plaza: { nombre: 'Plaza Grande', latitud: -0.2202, longitud: -78.5121 },
-	mariscal: { nombre: 'La Mariscal', latitud: -0.1974, longitud: -78.4938 },
-	carolina: { nombre: 'Parque La Carolina', latitud: -0.1807, longitud: -78.4797 },
-	quicentro: { nombre: 'Quicentro Norte', latitud: -0.1766, longitud: -78.4806 },
-	inaquito: { nombre: 'Iñaquito', latitud: -0.1737, longitud: -78.4851 },
-	cumbaya: { nombre: 'Cumbayá', latitud: -0.2026, longitud: -78.4275 },
-	sanrafael: { nombre: 'San Rafael', latitud: -0.2974, longitud: -78.4551 },
-	conocoto: { nombre: 'Conocoto', latitud: -0.3151, longitud: -78.4771 },
-	triangulo: { nombre: 'El Triángulo', latitud: -0.3007, longitud: -78.4579 },
-	sangolqui: { nombre: 'Sangolquí', latitud: -0.3304, longitud: -78.4525 }
+    ejido: { nombre: 'Parque El Ejido', latitud: -0.2015, longitud: -78.4974 },
+    alameda: { nombre: 'Parque La Alameda', latitud: -0.2135, longitud: -78.5002 },
+    plaza: { nombre: 'Plaza Grande', latitud: -0.2202, longitud: -78.5121 },
+    mariscal: { nombre: 'La Mariscal', latitud: -0.1974, longitud: -78.4938 },
+    carolina: { nombre: 'Parque La Carolina', latitud: -0.1807, longitud: -78.4797 },
+    quicentro: { nombre: 'Quicentro Norte', latitud: -0.1766, longitud: -78.4806 },
+    inaquito: { nombre: 'Iñaquito', latitud: -0.1737, longitud: -78.4851 },
+    cumbaya: { nombre: 'Cumbayá', latitud: -0.2026, longitud: -78.4275 },
+    sanrafael: { nombre: 'San Rafael', latitud: -0.2974, longitud: -78.4551 },
+    conocoto: { nombre: 'Conocoto', latitud: -0.3151, longitud: -78.4771 },
+    triangulo: { nombre: 'El Triángulo', latitud: -0.3007, longitud: -78.4579 },
+    sangolqui: { nombre: 'Sangolquí', latitud: -0.3304, longitud: -78.4525 }
 };
 
 // Grafo educativo: conecta los destinos que BFS puede visitar durante el cálculo.
 const grafo = {
-	ejido: ['alameda', 'mariscal'],
-	alameda: ['ejido', 'plaza', 'mariscal'],
-	plaza: ['alameda'],
-	mariscal: ['ejido', 'alameda', 'carolina'],
-	carolina: ['mariscal', 'quicentro', 'inaquito', 'cumbaya'],
-	quicentro: ['carolina', 'inaquito'],
-	inaquito: ['carolina', 'quicentro'],
-	cumbaya: ['carolina', 'sanrafael'],
-	sanrafael: ['cumbaya', 'triangulo'],
-	triangulo: ['sanrafael', 'conocoto', 'sangolqui'],
-	conocoto: ['triangulo', 'sangolqui'],
-	sangolqui: ['triangulo', 'conocoto']
+    ejido: ['alameda', 'mariscal'],
+    alameda: ['ejido', 'plaza', 'mariscal'],
+    plaza: ['alameda'],
+    mariscal: ['ejido', 'alameda', 'carolina'],
+    carolina: ['mariscal', 'quicentro', 'inaquito', 'cumbaya'],
+    quicentro: ['carolina', 'inaquito'],
+    inaquito: ['carolina', 'quicentro'],
+    cumbaya: ['carolina', 'sanrafael'],
+    sanrafael: ['cumbaya', 'triangulo'],
+    triangulo: ['sanrafael', 'conocoto', 'sangolqui'],
+    conocoto: ['triangulo', 'sangolqui'],
+    sangolqui: ['triangulo', 'conocoto']
 };
 
 // Obtiene un elemento de la interfaz a partir de su identificador HTML.
@@ -105,817 +105,817 @@ const servicioRutas = 'https://router.project-osrm.org/route/v1/driving';
 
 // Costos usados por la tienda para desbloquear o equipar vehículos.
 const costosVehiculos = {
-	clasico: 0,
-	turbo: 200,
-	neon: 400,
-	taxi: 600
+    clasico: 0,
+    turbo: 200,
+    neon: 400,
+    taxi: 600
 };
 
 // Guarda en el navegador los vehículos que el jugador ya compró.
 let vehiculosDesbloqueados = JSON.parse(
-	localStorage.getItem('vehiculos-desbloqueados') || '["clasico"]'
+    localStorage.getItem('vehiculos-desbloqueados') || '["clasico"]'
 );
 let vehiculoSeleccionado = localStorage.getItem('vehiculo-seleccionado') || 'clasico';
 
 // Encuentra el camino más corto entre dos lugares usando el algoritmo BFS.
 function buscarAnchura(inicio, fin) {
-	const cola = [inicio];
-	const anterior = { [inicio]: null };
+    const cola = [inicio];
+    const anterior = { [inicio]: null };
 
-	while (cola.length) {
-		const nodo = cola.shift();
+    while (cola.length) {
+        const nodo = cola.shift();
 
-		if (nodo === fin) {
-			break;
-		}
+        if (nodo === fin) {
+            break;
+        }
 
-		grafo[nodo].forEach((siguiente) => {
-			if (!(siguiente in anterior)) {
-				anterior[siguiente] = nodo;
-				cola.push(siguiente);
-			}
-		});
-	}
+        grafo[nodo].forEach((siguiente) => {
+            if (!(siguiente in anterior)) {
+                anterior[siguiente] = nodo;
+                cola.push(siguiente);
+            }
+        });
+    }
 
-	const camino = [];
-	let nodoActual = fin;
+    const camino = [];
+    let nodoActual = fin;
 
-	while (nodoActual !== null && nodoActual !== undefined) {
-		camino.unshift(nodoActual);
-		nodoActual = anterior[nodoActual];
-	}
+    while (nodoActual !== null && nodoActual !== undefined) {
+        camino.unshift(nodoActual);
+        nodoActual = anterior[nodoActual];
+    }
 
-	return camino;
+    return camino;
 }
 
 // Reinicia el recorrido y prepara una partida con los puntos indicados.
 function generarRuta(origenElegido, destinoElegido) {
-	clearInterval(temporizadorAutomatico);
-	clearInterval(temporizadorMaquina);
-	clearInterval(temporizadorMovimiento);
-	clearInterval(temporizadorCarrera);
-	clearTimeout(temporizadorNitro);
-	clearTimeout(temporizadorObstaculo);
-	clearTimeout(temporizadorAlertaObstaculo);
-	clearInterval(temporizadorCuentaAviso);
-	clearInterval(temporizadorCuentaRegresiva);
-	teclasPresionadas.clear();
-	const contadorCarrera = obtenerElemento('race-countdown');
-	contadorCarrera.classList.add('hidden');
-	contadorCarrera.textContent = '5';
-	ocultarObstaculo();
-	temporizadorMovimiento = undefined;
-	temporizadorCarrera = undefined;
-	marcadoresNitro.forEach((marcador) => mapa.removeLayer(marcador));
-	marcadoresNitro = [];
-	temporizadorObstaculo = undefined;
-	temporizadorAlertaObstaculo = undefined;
-	temporizadorCuentaAviso = undefined;
-	temporizadorCuentaRegresiva = undefined;
-	carreraIniciada = modo !== 'versus';
-	vehiculoDetenido = false;
-	pulsacionesReparacion = 0;
-	nitroActivo = false;
-	nitroDisponible = 0;
-	nitroEnMapa = false;
-	jugadorDetenidoHasta = 0;
-	controlesInvertidosHasta = 0;
+    clearInterval(temporizadorAutomatico);
+    clearInterval(temporizadorMaquina);
+    clearInterval(temporizadorMovimiento);
+    clearInterval(temporizadorCarrera);
+    clearTimeout(temporizadorNitro);
+    clearTimeout(temporizadorObstaculo);
+    clearTimeout(temporizadorAlertaObstaculo);
+    clearInterval(temporizadorCuentaAviso);
+    clearInterval(temporizadorCuentaRegresiva);
+    teclasPresionadas.clear();
+    const contadorCarrera = obtenerElemento('race-countdown');
+    contadorCarrera.classList.add('hidden');
+    contadorCarrera.textContent = '5';
+    ocultarObstaculo();
+    temporizadorMovimiento = undefined;
+    temporizadorCarrera = undefined;
+    marcadoresNitro.forEach((marcador) => mapa.removeLayer(marcador));
+    marcadoresNitro = [];
+    temporizadorObstaculo = undefined;
+    temporizadorAlertaObstaculo = undefined;
+    temporizadorCuentaAviso = undefined;
+    temporizadorCuentaRegresiva = undefined;
+    carreraIniciada = modo !== 'versus';
+    vehiculoDetenido = false;
+    pulsacionesReparacion = 0;
+    nitroActivo = false;
+    nitroDisponible = 0;
+    nitroEnMapa = false;
+    jugadorDetenidoHasta = 0;
+    controlesInvertidosHasta = 0;
 
-	origen = origenElegido;
-	destino = destinoElegido;
-	caminoOptimo = buscarAnchura(origen, destino);
-	geometriaRutaCalles = undefined;
-	rutaCallesLista = false;
-	indiceRutaJugador = 0;
-	indiceCalleAutopiloto = 0;
-	indiceCalleMaquina = 0;
-	actual = origen;
-	caminoJugador = [origen];
-	posicionJugador = obtenerPunto(origen);
-	recorridoLibre = [posicionJugador.slice()];
-	posicionMaquina = obtenerPunto(origen);
-	pasosJugador = 0;
-	indiceMaquina = 0;
-	inicioPartida = Date.now();
+    origen = origenElegido;
+    destino = destinoElegido;
+    caminoOptimo = buscarAnchura(origen, destino);
+    geometriaRutaCalles = undefined;
+    rutaCallesLista = false;
+    indiceRutaJugador = 0;
+    indiceCalleAutopiloto = 0;
+    indiceCalleMaquina = 0;
+    actual = origen;
+    caminoJugador = [origen];
+    posicionJugador = obtenerPunto(origen);
+    recorridoLibre = [posicionJugador.slice()];
+    posicionMaquina = obtenerPunto(origen);
+    pasosJugador = 0;
+    indiceMaquina = 0;
+    inicioPartida = Date.now();
 
-	clearInterval(idTemporizador);
-	if (modo !== 'versus') {
-		idTemporizador = setInterval(actualizarTiempo, 1000);
-	}
+    clearInterval(idTemporizador);
+    if (modo !== 'versus') {
+        idTemporizador = setInterval(actualizarTiempo, 1000);
+    }
 
-	dibujarRuta();
-	actualizarPanel();
+    dibujarRuta();
+    actualizarPanel();
 
-	if (modo === 'auto') {
-		ejecutarAutopiloto();
-	} else if (modo === 'versus') {
-		colocarNitro();
-		iniciarCuentaRegresiva();
-	}
+    if (modo === 'auto') {
+        ejecutarAutopiloto();
+    } else if (modo === 'versus') {
+        colocarNitro();
+        iniciarCuentaRegresiva();
+    }
 }
 
 // Permite elegir una ruta nueva desde la tarjeta de misión.
 function calcularRutaSeleccionada() {
-	const origenElegido = obtenerElemento('origin-select').value;
-	const destinoElegido = obtenerElemento('destination-select').value;
+    const origenElegido = obtenerElemento('origin-select').value;
+    const destinoElegido = obtenerElemento('destination-select').value;
 
-	if (!origenElegido || !destinoElegido || origenElegido === destinoElegido) {
-		mostrarAviso('Elige dos puntos diferentes para calcular la ruta');
-		return;
-	}
+    if (!origenElegido || !destinoElegido || origenElegido === destinoElegido) {
+        mostrarAviso('Elige dos puntos diferentes para calcular la ruta');
+        return;
+    }
 
-	generarRuta(origenElegido, destinoElegido);
+    generarRuta(origenElegido, destinoElegido);
 }
 
 // Crea una ruta aleatoria válida y la inicia en manual, automático o versus.
 function generarRutaAutomatica() {
-	const lugaresDisponibles = Object.keys(lugares);
-	let origenAutomatico;
-	let destinoAutomatico;
+    const lugaresDisponibles = Object.keys(lugares);
+    let origenAutomatico;
+    let destinoAutomatico;
 
-	do {
-		origenAutomatico = lugaresDisponibles[Math.floor(Math.random() * lugaresDisponibles.length)];
-		destinoAutomatico = lugaresDisponibles[Math.floor(Math.random() * lugaresDisponibles.length)];
-	} while (origenAutomatico === destinoAutomatico);
+    do {
+        origenAutomatico = lugaresDisponibles[Math.floor(Math.random() * lugaresDisponibles.length)];
+        destinoAutomatico = lugaresDisponibles[Math.floor(Math.random() * lugaresDisponibles.length)];
+    } while (origenAutomatico === destinoAutomatico);
 
-	obtenerElemento('origin-select').value = origenAutomatico;
-	obtenerElemento('destination-select').value = destinoAutomatico;
-	generarRuta(origenAutomatico, destinoAutomatico);
+    obtenerElemento('origin-select').value = origenAutomatico;
+    obtenerElemento('destination-select').value = destinoAutomatico;
+    generarRuta(origenAutomatico, destinoAutomatico);
 }
 
 // Avanza una posición hacia otra usando una distancia fija en metros.
 function avanzarHacia(posicion, objetivo, velocidad) {
-	const distancia = mapa.distance(posicion, objetivo);
+    const distancia = mapa.distance(posicion, objetivo);
 
-	if (distancia === 0 || distancia <= velocidad) {
-		return objetivo.slice();
-	}
+    if (distancia === 0 || distancia <= velocidad) {
+        return objetivo.slice();
+    }
 
-	const proporcion = velocidad / distancia;
-	return [
-		posicion[0] + (objetivo[0] - posicion[0]) * proporcion,
-		posicion[1] + (objetivo[1] - posicion[1]) * proporcion
-	];
+    const proporcion = velocidad / distancia;
+    return [
+        posicion[0] + (objetivo[0] - posicion[0]) * proporcion,
+        posicion[1] + (objetivo[1] - posicion[1]) * proporcion
+    ];
 }
 
 // Crea el mapa de Leaflet, configura el zoom y carga sus mapas base.
 function inicializarMapa() {
-	mapa = L.map('map', { zoomControl: false, keyboard: false })
-		.setView([-0.235, -78.475], 11);
+    mapa = L.map('map', { zoomControl: false, keyboard: false })
+        .setView([-0.235, -78.475], 11);
 
-	L.control.zoom({ position: 'bottomright' }).addTo(mapa);
+    L.control.zoom({ position: 'bottomright' }).addTo(mapa);
 
-	L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-		attribution: '© OpenStreetMap contributors'
-	}).addTo(mapa);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(mapa);
 }
 
 // Muestra el conteo de 5 a 0 antes de iniciar la carrera.
 function iniciarCuentaRegresiva() {
-	const contador = obtenerElemento('race-countdown');
-	let numero = 5;
+    const contador = obtenerElemento('race-countdown');
+    let numero = 5;
 
-	contador.textContent = numero;
-	contador.classList.remove('hidden');
+    contador.textContent = numero;
+    contador.classList.remove('hidden');
 
-	temporizadorCuentaRegresiva = setInterval(() => {
-		numero -= 1;
+    temporizadorCuentaRegresiva = setInterval(() => {
+        numero -= 1;
 
-		if (numero === 0) {
-			contador.textContent = '¡YA!';
-			carreraIniciada = true;
-			inicioPartida = Date.now();
-			idTemporizador = setInterval(actualizarTiempo, 1000);
-			ejecutarMaquina();
-			clearInterval(temporizadorCuentaRegresiva);
-			setTimeout(() => contador.classList.add('hidden'), 700);
-			return;
-		}
+        if (numero === 0) {
+            contador.textContent = '¡YA!';
+            carreraIniciada = true;
+            inicioPartida = Date.now();
+            idTemporizador = setInterval(actualizarTiempo, 1000);
+            ejecutarMaquina();
+            clearInterval(temporizadorCuentaRegresiva);
+            setTimeout(() => contador.classList.add('hidden'), 700);
+            return;
+        }
 
-		contador.textContent = numero;
-	}, 1000);
+        contador.textContent = numero;
+    }, 1000);
 }
 
 // Coloca el poder nitro en un punto aleatorio de la ruta óptima.
 function colocarNitro() {
-	const iconoNitro = L.divIcon({
-		className: 'nitro-marker',
-		html: '<div class="nitro-avatar">N</div>',
-		iconSize: [34, 34],
-		iconAnchor: [17, 17]
-	});
+    const iconoNitro = L.divIcon({
+        className: 'nitro-marker',
+        html: '<div class="nitro-avatar">N</div>',
+        iconSize: [34, 34],
+        iconAnchor: [17, 17]
+    });
 
-	const indicesNitro = [
-		1,
-		Math.min(2, caminoOptimo.length - 1),
-		Math.floor(caminoOptimo.length * 0.45),
-		Math.floor(caminoOptimo.length * 0.7)
-	].slice(0, cantidadNitros);
+    const indicesNitro = [
+        1,
+        Math.min(2, caminoOptimo.length - 1),
+        Math.floor(caminoOptimo.length * 0.45),
+        Math.floor(caminoOptimo.length * 0.7)
+    ].slice(0, cantidadNitros);
 
-	[...new Set(indicesNitro)].forEach((indice) => {
-		const lugarNitro = caminoOptimo[indice];
-		const marcador = L.marker(obtenerPunto(lugarNitro), {
-			icon: iconoNitro
-		}).addTo(mapa);
-		marcadoresNitro.push(marcador);
-	});
-	nitroEnMapa = true;
+    [...new Set(indicesNitro)].forEach((indice) => {
+        const lugarNitro = caminoOptimo[indice];
+        const marcador = L.marker(obtenerPunto(lugarNitro), {
+            icon: iconoNitro
+        }).addTo(mapa);
+        marcadoresNitro.push(marcador);
+    });
+    nitroEnMapa = true;
 }
 
 // Crea el avatar visual que representa a un vehículo en el mapa.
 function crearIconoVehiculo(claseVehiculo) {
-	return L.divIcon({
-		className: 'vehicle-marker',
-		html: `<div class="vehicle-avatar ${claseVehiculo}" aria-label="Vehículo"><span class="carro-sombra"></span><span class="carro-cuerpo"></span><span class="carro-cabina"><i class="carro-ventana ventana-izquierda"></i><i class="carro-ventana ventana-derecha"></i></span><i class="carro-luz luz-trasera"></i><i class="carro-luz luz-delantera"></i><i class="carro-rueda rueda-izquierda"></i><i class="carro-rueda rueda-derecha"></i></div>`,
-		iconSize: [82, 68],
-		iconAnchor: [41, 34]
-	});
+    return L.divIcon({
+        className: 'vehicle-marker',
+        html: `<div class="vehicle-avatar ${claseVehiculo}" aria-label="Vehículo"><span class="carro-sombra"></span><span class="carro-cuerpo"></span><span class="carro-cabina"><i class="carro-ventana ventana-izquierda"></i><i class="carro-ventana ventana-derecha"></i></span><i class="carro-luz luz-trasera"></i><i class="carro-luz luz-delantera"></i><i class="carro-rueda rueda-izquierda"></i><i class="carro-rueda rueda-derecha"></i></div>`,
+        iconSize: [82, 68],
+        iconAnchor: [41, 34]
+    });
 }
 
 // Convierte un lugar en coordenadas que Leaflet puede dibujar.
 function obtenerPunto(identificador) {
-	return [lugares[identificador].latitud, lugares[identificador].longitud];
+    return [lugares[identificador].latitud, lugares[identificador].longitud];
 }
 
 // Busca el punto de calle más cercano a un vehículo para cambiar de ruta sin saltos.
 function encontrarCalleMasCercana(trayectoria, posicion) {
-	return trayectoria.reduce((indiceCercano, punto, indice) => (
-		mapa.distance(posicion, punto) < mapa.distance(posicion, trayectoria[indiceCercano])
-			? indice
-			: indiceCercano
-	), 0);
+    return trayectoria.reduce((indiceCercano, punto, indice) => (
+        mapa.distance(posicion, punto) < mapa.distance(posicion, trayectoria[indiceCercano])
+            ? indice
+            : indiceCercano
+    ), 0);
 }
 
 // Avanza por una trayectoria ordenada sin atravesar segmentos ni invertir la dirección.
 function avanzarPorTrayectoria(posicion, trayectoria, indice, velocidad) {
-	let indiceActual = indice;
-	let posicionActual = posicion.slice();
-	let distanciaDisponible = velocidad;
+    let indiceActual = indice;
+    let posicionActual = posicion.slice();
+    let distanciaDisponible = velocidad;
 
-	while (indiceActual < trayectoria.length - 1 && distanciaDisponible > 0) {
-		const siguientePunto = trayectoria[indiceActual + 1];
-		const distancia = mapa.distance(posicionActual, siguientePunto);
+    while (indiceActual < trayectoria.length - 1 && distanciaDisponible > 0) {
+        const siguientePunto = trayectoria[indiceActual + 1];
+        const distancia = mapa.distance(posicionActual, siguientePunto);
 
-		if (distancia <= distanciaDisponible) {
-			posicionActual = siguientePunto.slice();
-			distanciaDisponible -= distancia;
-			indiceActual += 1;
-		} else {
-			posicionActual = avanzarHacia(posicionActual, siguientePunto, distanciaDisponible);
-			distanciaDisponible = 0;
-		}
-	}
+        if (distancia <= distanciaDisponible) {
+            posicionActual = siguientePunto.slice();
+            distanciaDisponible -= distancia;
+            indiceActual += 1;
+        } else {
+            posicionActual = avanzarHacia(posicionActual, siguientePunto, distanciaDisponible);
+            distanciaDisponible = 0;
+        }
+    }
 
-	return { posicion: posicionActual, indice: indiceActual };
+    return { posicion: posicionActual, indice: indiceActual };
 }
 
 // Pide a OSRM la geometría de las calles para evitar atravesar edificios o montañas.
 async function cargarRutaPorCalles() {
-	const solicitudActual = ++solicitudRuta;
-	const puntoOrigen = obtenerPunto(origen);
-	const puntoDestino = obtenerPunto(destino);
-	const coordenadas = `${puntoOrigen[1]},${puntoOrigen[0]};${puntoDestino[1]},${puntoDestino[0]}`;
+    const solicitudActual = ++solicitudRuta;
+    const puntoOrigen = obtenerPunto(origen);
+    const puntoDestino = obtenerPunto(destino);
+    const coordenadas = `${puntoOrigen[1]},${puntoOrigen[0]};${puntoDestino[1]},${puntoDestino[0]}`;
 
-	try {
-		const respuesta = await fetch(`${servicioRutas}/${coordenadas}?overview=full&geometries=geojson`);
-		if (!respuesta.ok) throw new Error('No se pudo consultar el servicio de calles');
+    try {
+        const respuesta = await fetch(`${servicioRutas}/${coordenadas}?overview=full&geometries=geojson`);
+        if (!respuesta.ok) throw new Error('No se pudo consultar el servicio de calles');
 
-		const datos = await respuesta.json();
-		if (solicitudActual !== solicitudRuta || !datos.routes?.length) return;
+        const datos = await respuesta.json();
+        if (solicitudActual !== solicitudRuta || !datos.routes?.length) return;
 
-		geometriaRutaCalles = datos.routes[0].geometry.coordinates.map(([longitud, latitud]) => [latitud, longitud]);
-		rutaCallesLista = true;
-		indiceCalleAutopiloto = encontrarCalleMasCercana(geometriaRutaCalles, posicionJugador);
-		indiceCalleMaquina = encontrarCalleMasCercana(geometriaRutaCalles, posicionMaquina);
-		indiceRutaJugador = encontrarCalleMasCercana(geometriaRutaCalles, posicionJugador);
-		lineaOptima.setLatLngs(geometriaRutaCalles);
-		mapa.fitBounds(lineaOptima.getBounds(), { padding: [70, 70] });
-		mostrarAviso('Ruta calculada por calles reales');
-	} catch (error) {
-		if (solicitudActual === solicitudRuta) {
-			// Sin una respuesta real no se dibuja ni se recorre una línea falsa.
-			rutaCallesLista = false;
-			clearInterval(temporizadorAutomatico);
-			clearInterval(temporizadorCarrera);
-			clearInterval(temporizadorCuentaRegresiva);
-			obtenerElemento('race-countdown').classList.add('hidden');
-			mostrarAviso('No se pudo cargar la ruta por calles. Revisa la conexión e inténtalo de nuevo');
-		}
-	}
+        geometriaRutaCalles = datos.routes[0].geometry.coordinates.map(([longitud, latitud]) => [latitud, longitud]);
+        rutaCallesLista = true;
+        indiceCalleAutopiloto = encontrarCalleMasCercana(geometriaRutaCalles, posicionJugador);
+        indiceCalleMaquina = encontrarCalleMasCercana(geometriaRutaCalles, posicionMaquina);
+        indiceRutaJugador = encontrarCalleMasCercana(geometriaRutaCalles, posicionJugador);
+        lineaOptima.setLatLngs(geometriaRutaCalles);
+        mapa.fitBounds(lineaOptima.getBounds(), { padding: [70, 70] });
+        mostrarAviso('Ruta calculada por calles reales');
+    } catch (error) {
+        if (solicitudActual === solicitudRuta) {
+            // Sin una respuesta real no se dibuja ni se recorre una línea falsa.
+            rutaCallesLista = false;
+            clearInterval(temporizadorAutomatico);
+            clearInterval(temporizadorCarrera);
+            clearInterval(temporizadorCuentaRegresiva);
+            obtenerElemento('race-countdown').classList.add('hidden');
+            mostrarAviso('No se pudo cargar la ruta por calles. Revisa la conexión e inténtalo de nuevo');
+        }
+    }
 }
 
 // Dibuja las rutas y actualiza los marcadores A, B y del vehículo.
 function dibujarRuta() {
-	if (lineaRuta) mapa.removeLayer(lineaRuta);
-	if (lineaOptima) mapa.removeLayer(lineaOptima);
-	if (marcadorJugador) mapa.removeLayer(marcadorJugador);
-	if (marcadorOrigen) mapa.removeLayer(marcadorOrigen);
-	if (marcadorDestino) mapa.removeLayer(marcadorDestino);
-	if (marcadorMaquina) mapa.removeLayer(marcadorMaquina);
+    if (lineaRuta) mapa.removeLayer(lineaRuta);
+    if (lineaOptima) mapa.removeLayer(lineaOptima);
+    if (marcadorJugador) mapa.removeLayer(marcadorJugador);
+    if (marcadorOrigen) mapa.removeLayer(marcadorOrigen);
+    if (marcadorDestino) mapa.removeLayer(marcadorDestino);
+    if (marcadorMaquina) mapa.removeLayer(marcadorMaquina);
 
-	// La ruta verde aparece cuando OSRM entrega la geometría real de las calles.
-	lineaOptima = L.polyline(geometriaRutaCalles || [], {
-		color: '#c7f36b',
-		weight: 5,
-		opacity: 0.9,
-		dashArray: '8 8'
-	}).addTo(mapa);
+    // La ruta verde aparece cuando OSRM entrega la geometría real de las calles.
+    lineaOptima = L.polyline(geometriaRutaCalles || [], {
+        color: '#c7f36b',
+        weight: 5,
+        opacity: 0.9,
+        dashArray: '8 8'
+    }).addTo(mapa);
 
-	if (modo === 'manual' || modo === 'versus') {
-		lineaRuta = L.polyline(recorridoLibre, {
-			color: '#d9463e',
-			weight: 5,
-			opacity: 0.95
-		}).addTo(mapa);
-	} else {
-		lineaRuta = L.polyline(caminoJugador.map(obtenerPunto), {
-			color: '#4f9eb0',
-			weight: 7,
-			opacity: 0.9
-		}).addTo(mapa);
-	}
+    if (modo === 'manual' || modo === 'versus') {
+        lineaRuta = L.polyline(recorridoLibre, {
+            color: '#d9463e',
+            weight: 5,
+            opacity: 0.95
+        }).addTo(mapa);
+    } else {
+        lineaRuta = L.polyline(caminoJugador.map(obtenerPunto), {
+            color: '#4f9eb0',
+            weight: 7,
+            opacity: 0.9
+        }).addTo(mapa);
+    }
 
-	const iconoOrigen = L.divIcon({
-		className: 'route-marker',
-		html: '<div class="origin-avatar">A</div>',
-		iconSize: [30, 30],
-		iconAnchor: [15, 15]
-	});
+    const iconoOrigen = L.divIcon({
+        className: 'route-marker',
+        html: '<div class="origin-avatar">A</div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+    });
 
-	const iconoDestino = L.divIcon({
-		className: 'route-marker',
-		html: '<div class="destination-avatar">B</div>',
-		iconSize: [30, 30],
-		iconAnchor: [15, 15]
-	});
+    const iconoDestino = L.divIcon({
+        className: 'route-marker',
+        html: '<div class="destination-avatar">B</div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+    });
 
-	marcadorOrigen = L.marker(obtenerPunto(origen), { icon: iconoOrigen }).addTo(mapa);
-	marcadorDestino = L.marker(obtenerPunto(destino), {
-		icon: iconoDestino
-	}).addTo(mapa);
-	marcadorJugador = L.marker(posicionJugador, {
-		icon: crearIconoVehiculo(`skin-${vehiculoSeleccionado}`)
-	}).addTo(mapa);
+    marcadorOrigen = L.marker(obtenerPunto(origen), { icon: iconoOrigen }).addTo(mapa);
+    marcadorDestino = L.marker(obtenerPunto(destino), {
+        icon: iconoDestino
+    }).addTo(mapa);
+    marcadorJugador = L.marker(posicionJugador, {
+        icon: crearIconoVehiculo(`skin-${vehiculoSeleccionado}`)
+    }).addTo(mapa);
 
-	if (modo === 'versus') {
-		marcadorMaquina = L.marker(posicionMaquina, {
-			icon: crearIconoVehiculo('vehiculo-maquina')
-		}).addTo(mapa);
-	}
+    if (modo === 'versus') {
+        marcadorMaquina = L.marker(posicionMaquina, {
+            icon: crearIconoVehiculo('vehiculo-maquina')
+        }).addTo(mapa);
+    }
 
-	mapa.fitBounds(L.latLngBounds(caminoOptimo.map(obtenerPunto)), {
-		padding: [70, 70]
-	});
-	cargarRutaPorCalles();
+    mapa.fitBounds(L.latLngBounds(caminoOptimo.map(obtenerPunto)), {
+        padding: [70, 70]
+    });
+    cargarRutaPorCalles();
 }
 
 // Actualiza la información de la misión, posición, pasos y puntuación.
 function actualizarPanel() {
-	obtenerElemento('origin-label').textContent = lugares[origen].nombre;
-	obtenerElemento('destination-label').textContent = lugares[destino].nombre;
-	obtenerElemento('position-value').textContent = lugares[actual].nombre;
-	obtenerElemento('steps-value').textContent = modo === 'manual'
-		? pasosJugador
-		: caminoJugador.length - 1;
-	obtenerElemento('optimal-value').textContent = `${caminoOptimo.length - 1} pasos`;
-	obtenerElemento('queue-value').textContent = caminoOptimo
-		.slice(0, Math.min(5, caminoOptimo.length))
-		.map((identificador) => lugares[identificador].nombre.split(' ')[0])
-		.join(' → ');
-	obtenerElemento('score-value').textContent = String(puntuacion).padStart(4, '0');
-	obtenerElemento('record-value').textContent = String(mejorPuntuacion).padStart(4, '0');
-	actualizarTienda();
+    obtenerElemento('origin-label').textContent = lugares[origen].nombre;
+    obtenerElemento('destination-label').textContent = lugares[destino].nombre;
+    obtenerElemento('position-value').textContent = lugares[actual].nombre;
+    obtenerElemento('steps-value').textContent = modo === 'manual'
+        ? pasosJugador
+        : caminoJugador.length - 1;
+    obtenerElemento('optimal-value').textContent = `${caminoOptimo.length - 1} pasos`;
+    obtenerElemento('queue-value').textContent = caminoOptimo
+        .slice(0, Math.min(5, caminoOptimo.length))
+        .map((identificador) => lugares[identificador].nombre.split(' ')[0])
+        .join(' → ');
+    obtenerElemento('score-value').textContent = String(puntuacion).padStart(4, '0');
+    obtenerElemento('record-value').textContent = String(mejorPuntuacion).padStart(4, '0');
+    actualizarTienda();
 }
 
 // Actualiza el saldo y el estado de cada vehículo disponible en la tienda.
 function actualizarTienda() {
-	obtenerElemento('shop-balance').textContent = String(puntuacion).padStart(4, '0');
+    obtenerElemento('shop-balance').textContent = String(puntuacion).padStart(4, '0');
 
-	document.querySelectorAll('.skin-button').forEach((boton) => {
-		const vehiculo = boton.dataset.skin;
-		const desbloqueado = vehiculosDesbloqueados.includes(vehiculo);
-		const costo = costosVehiculos[vehiculo];
-		const textoEstado = boton.querySelector('small');
+    document.querySelectorAll('.skin-button').forEach((boton) => {
+        const vehiculo = boton.dataset.skin;
+        const desbloqueado = vehiculosDesbloqueados.includes(vehiculo);
+        const costo = costosVehiculos[vehiculo];
+        const textoEstado = boton.querySelector('small');
 
-		boton.classList.toggle('active', vehiculo === vehiculoSeleccionado);
-		boton.classList.toggle('locked', !desbloqueado);
-		textoEstado.textContent = vehiculo === vehiculoSeleccionado
-			? 'EQUIPADO'
-			: desbloqueado ? 'EQUIPAR' : `${costo} PUNTOS`;
-	});
+        boton.classList.toggle('active', vehiculo === vehiculoSeleccionado);
+        boton.classList.toggle('locked', !desbloqueado);
+        textoEstado.textContent = vehiculo === vehiculoSeleccionado
+            ? 'EQUIPADO'
+            : desbloqueado ? 'EQUIPAR' : `${costo} PUNTOS`;
+    });
 }
 
 // Compra un vehículo o equipa uno que ya fue desbloqueado.
 function comprarVehiculo(vehiculo) {
-	const costo = costosVehiculos[vehiculo];
+    const costo = costosVehiculos[vehiculo];
 
-	if (vehiculosDesbloqueados.includes(vehiculo)) {
-		vehiculoSeleccionado = vehiculo;
-		localStorage.setItem('vehiculo-seleccionado', vehiculoSeleccionado);
-		dibujarRuta();
-		actualizarTienda();
-		return;
-	}
+    if (vehiculosDesbloqueados.includes(vehiculo)) {
+        vehiculoSeleccionado = vehiculo;
+        localStorage.setItem('vehiculo-seleccionado', vehiculoSeleccionado);
+        dibujarRuta();
+        actualizarTienda();
+        return;
+    }
 
-	if (puntuacion < costo) {
-		mostrarAviso(`Necesitas ${costo} puntos para comprar este vehículo`);
-		return;
-	}
+    if (puntuacion < costo) {
+        mostrarAviso(`Necesitas ${costo} puntos para comprar este vehículo`);
+        return;
+    }
 
-	puntuacion -= costo;
-	vehiculosDesbloqueados.push(vehiculo);
-	vehiculoSeleccionado = vehiculo;
-	localStorage.setItem('vehiculos-desbloqueados', JSON.stringify(vehiculosDesbloqueados));
-	localStorage.setItem('vehiculo-seleccionado', vehiculoSeleccionado);
-	actualizarPanel();
-	dibujarRuta();
-	mostrarAviso('Vehículo comprado y equipado');
+    puntuacion -= costo;
+    vehiculosDesbloqueados.push(vehiculo);
+    vehiculoSeleccionado = vehiculo;
+    localStorage.setItem('vehiculos-desbloqueados', JSON.stringify(vehiculosDesbloqueados));
+    localStorage.setItem('vehiculo-seleccionado', vehiculoSeleccionado);
+    actualizarPanel();
+    dibujarRuta();
+    mostrarAviso('Vehículo comprado y equipado');
 }
 
 // Calcula y muestra el tiempo transcurrido desde el inicio de la partida.
 function actualizarTiempo() {
-	const tiempoTranscurrido = Math.floor((Date.now() - inicioPartida) / 1000);
-	const minutos = String(Math.floor(tiempoTranscurrido / 60)).padStart(2, '0');
-	const segundos = String(tiempoTranscurrido % 60).padStart(2, '0');
+    const tiempoTranscurrido = Math.floor((Date.now() - inicioPartida) / 1000);
+    const minutos = String(Math.floor(tiempoTranscurrido / 60)).padStart(2, '0');
+    const segundos = String(tiempoTranscurrido % 60).padStart(2, '0');
 
-	obtenerElemento('time-value').textContent = `${minutos}:${segundos}`;
+    obtenerElemento('time-value').textContent = `${minutos}:${segundos}`;
 }
 
 // Mueve el vehículo manual por la ruta de calles, siempre en el sentido A hacia B.
 function moverJugadorLibre() {
-	if ((modo !== 'manual' && modo !== 'versus') || !posicionJugador) return;
-	if (modo === 'versus' && !carreraIniciada) return;
-	if (!rutaCallesLista) return;
+    if ((modo !== 'manual' && modo !== 'versus') || !posicionJugador) return;
+    if (modo === 'versus' && !carreraIniciada) return;
+    if (!rutaCallesLista) return;
 
-	if (vehiculoDetenido || Date.now() < jugadorDetenidoHasta) return;
+    if (vehiculoDetenido || Date.now() < jugadorDetenidoHasta) return;
 
-	if (!teclasPresionadas.size) return;
+    if (!teclasPresionadas.size) return;
 
-	// Invertir controles si está activa la desventaja en versus
-	const controlesInvertidos = modo === 'versus' && Date.now() < controlesInvertidosHasta;
-	let debeAvanzar = false;
+    // Invertir controles si está activa la desventaja en versus
+    const controlesInvertidos = modo === 'versus' && Date.now() < controlesInvertidosHasta;
+    let debeAvanzar = false;
 
-	if (!controlesInvertidos) {
-		debeAvanzar = teclasPresionadas.has('ArrowUp') || teclasPresionadas.has('ArrowRight') || teclasPresionadas.has('ArrowLeft') || teclasPresionadas.has('ArrowDown');
-	} else {
-		// Controles invertidos: solo las teclas contrarias (Abajo o Izquierda) mueven el vehículo
-		debeAvanzar = teclasPresionadas.has('ArrowDown') || teclasPresionadas.has('ArrowLeft');
-	}
+    if (!controlesInvertidos) {
+        debeAvanzar = teclasPresionadas.has('ArrowUp') || teclasPresionadas.has('ArrowRight') || teclasPresionadas.has('ArrowLeft') || teclasPresionadas.has('ArrowDown');
+    } else {
+        // Controles invertidos: solo las teclas contrarias (Abajo o Izquierda) mueven el vehículo
+        debeAvanzar = teclasPresionadas.has('ArrowDown') || teclasPresionadas.has('ArrowLeft');
+    }
 
-	if (!debeAvanzar) return;
+    if (!debeAvanzar) return;
 
-	// Convierte la velocidad expresada en grados a metros, unidad usada por Leaflet.
-	const velocidadActual = (nitroActivo ? velocidadNitro : velocidadMovimiento) * metrosPorGrado;
-	const trayectoria = geometriaRutaCalles;
-	if (!trayectoria?.length) return;
-	const avance = avanzarPorTrayectoria(
-		posicionJugador,
-		trayectoria,
-		indiceRutaJugador,
-		velocidadActual
-	);
-	indiceRutaJugador = avance.indice;
-	posicionJugador = avance.posicion;
+    // Convierte la velocidad expresada en grados a metros, unidad usada por Leaflet.
+    const velocidadActual = (nitroActivo ? velocidadNitro : velocidadMovimiento) * metrosPorGrado;
+    const trayectoria = geometriaRutaCalles;
+    if (!trayectoria?.length) return;
+    const avance = avanzarPorTrayectoria(
+        posicionJugador,
+        trayectoria,
+        indiceRutaJugador,
+        velocidadActual
+    );
+    indiceRutaJugador = avance.indice;
+    posicionJugador = avance.posicion;
 
-	pasosJugador += 1;
-	recorridoLibre.push(posicionJugador.slice());
-	marcadorJugador.setLatLng(posicionJugador);
-	lineaRuta.setLatLngs(recorridoLibre);
-	actualizarPanel();
-	comprobarNitro();
+    pasosJugador += 1;
+    recorridoLibre.push(posicionJugador.slice());
+    marcadorJugador.setLatLng(posicionJugador);
+    lineaRuta.setLatLngs(recorridoLibre);
+    actualizarPanel();
+    comprobarNitro();
 
-	const distanciaAlDestino = mapa.distance(
-		posicionJugador,
-		obtenerPunto(destino)
-	);
+    const distanciaAlDestino = mapa.distance(
+        posicionJugador,
+        obtenerPunto(destino)
+    );
 
-	if (distanciaAlDestino < 35) {
-		posicionJugador = obtenerPunto(destino);
-		marcadorJugador.setLatLng(posicionJugador);
-		actual = destino;
-		actualizarPanel();
-		finalizarPartida(true);
-	}
+    if (distanciaAlDestino < 35) {
+        posicionJugador = obtenerPunto(destino);
+        marcadorJugador.setLatLng(posicionJugador);
+        actual = destino;
+        actualizarPanel();
+        finalizarPartida(true);
+    }
 }
 
 // Comprueba si el vehículo del jugador recogió el poder nitro.
 function comprobarNitro() {
-	if (!nitroEnMapa || !marcadoresNitro.length) return;
+    if (!nitroEnMapa || !marcadoresNitro.length) return;
 
-	const indiceNitro = marcadoresNitro.findIndex((marcador) => (
-		mapa.distance(posicionJugador, marcador.getLatLng()) < 45
-	));
+    const indiceNitro = marcadoresNitro.findIndex((marcador) => (
+        mapa.distance(posicionJugador, marcador.getLatLng()) < 45
+    ));
 
-	if (indiceNitro !== -1) {
-		mapa.removeLayer(marcadoresNitro[indiceNitro]);
-		marcadoresNitro.splice(indiceNitro, 1);
-		nitroDisponible += 1;
-		nitroEnMapa = marcadoresNitro.length > 0;
-		mostrarAviso(`Nitro recogido (${nitroDisponible} disponible${nitroDisponible === 1 ? '' : 's'}). Pulsa SHIFT`);
-	}
+    if (indiceNitro !== -1) {
+        mapa.removeLayer(marcadoresNitro[indiceNitro]);
+        marcadoresNitro.splice(indiceNitro, 1);
+        nitroDisponible += 1;
+        nitroEnMapa = marcadoresNitro.length > 0;
+        mostrarAviso(`Nitro recogido (${nitroDisponible} disponible${nitroDisponible === 1 ? '' : 's'}). Pulsa SHIFT`);
+    }
 }
 
 // Activa el nitro durante tres segundos para adelantar a la máquina.
 function activarNitro() {
-	if (!nitroDisponible || nitroActivo || modo !== 'versus') return;
+    if (!nitroDisponible || nitroActivo || modo !== 'versus') return;
 
-	nitroActivo = true;
-	nitroDisponible -= 1;
-	mostrarAviso('NITRO ACTIVADO: velocidad aumentada durante 5 segundos');
-	clearTimeout(temporizadorNitro);
-	temporizadorNitro = setTimeout(() => {
-		nitroActivo = false;
-		mostrarAviso('Nitro agotado. Velocidad normal restaurada');
-	}, duracionNitro);
+    nitroActivo = true;
+    nitroDisponible -= 1;
+    mostrarAviso('NITRO ACTIVADO: velocidad aumentada durante 5 segundos');
+    clearTimeout(temporizadorNitro);
+    temporizadorNitro = setTimeout(() => {
+        nitroActivo = false;
+        mostrarAviso('Nitro agotado. Velocidad normal restaurada');
+    }, duracionNitro);
 }
 
 // Mueve la máquina exclusivamente por la ruta real de calles.
 function moverMaquina() {
-	if (modo !== 'versus' || !carreraIniciada || !posicionMaquina) return;
-	if (!rutaCallesLista) return;
+    if (modo !== 'versus' || !carreraIniciada || !posicionMaquina) return;
+    if (!rutaCallesLista) return;
 
-	// La máquina solo puede avanzar sobre la geometría real de calles.
-	const trayectoria = geometriaRutaCalles;
-	if (!trayectoria?.length) return;
-	const avance = avanzarPorTrayectoria(
-		posicionMaquina,
-		trayectoria,
-		indiceCalleMaquina,
-		velocidadMaquina
-	);
-	posicionMaquina = avance.posicion;
-	indiceCalleMaquina = avance.indice;
-	marcadorMaquina.setLatLng(posicionMaquina);
+    // La máquina solo puede avanzar sobre la geometría real de calles.
+    const trayectoria = geometriaRutaCalles;
+    if (!trayectoria?.length) return;
+    const avance = avanzarPorTrayectoria(
+        posicionMaquina,
+        trayectoria,
+        indiceCalleMaquina,
+        velocidadMaquina
+    );
+    posicionMaquina = avance.posicion;
+    indiceCalleMaquina = avance.indice;
+    marcadorMaquina.setLatLng(posicionMaquina);
 
-	if (avance.indice >= trayectoria.length - 1) {
-		clearInterval(temporizadorCarrera);
-		finalizarPartida(false);
-	}
+    if (avance.indice >= trayectoria.length - 1) {
+        clearInterval(temporizadorCarrera);
+        finalizarPartida(false);
+    }
 }
 
 // Aplica un obstáculo aleatorio que detiene o invierte temporalmente al jugador.
 function activarObstaculo() {
-	if (modo !== 'versus' || !carreraIniciada) return;
+    if (modo !== 'versus' || !carreraIniciada) return;
 
-	const detener = Math.random() < 0.5;
+    const detener = Math.random() < 0.5;
 
-	if (detener) {
-		vehiculoDetenido = true;
-		pulsacionesReparacion = 0;
-		mostrarObstaculoDetenido();
-	} else {
-		controlesInvertidosHasta = Date.now() + 4000;
-		mostrarObstaculoInvertido(4000);
-	}
+    if (detener) {
+        vehiculoDetenido = true;
+        pulsacionesReparacion = 0;
+        mostrarObstaculoDetenido();
+    } else {
+        controlesInvertidosHasta = Date.now() + 4000;
+        mostrarObstaculoInvertido(4000);
+    }
 
-	programarObstaculo();
+    programarObstaculo();
 }
 
 // Presenta el recuadro visual de vehículo detenido y el progreso de reparación con R.
 function mostrarObstaculoDetenido() {
-	clearInterval(temporizadorCuentaAviso);
-	clearTimeout(temporizadorAlertaObstaculo);
+    clearInterval(temporizadorCuentaAviso);
+    clearTimeout(temporizadorAlertaObstaculo);
 
-	const alerta = obtenerElemento('obstacle-alert');
-	alerta.classList.remove('alert-inverted');
-	alerta.classList.add('alert-stopped');
+    const alerta = obtenerElemento('obstacle-alert');
+    alerta.classList.remove('alert-inverted');
+    alerta.classList.add('alert-stopped');
 
-	const icono = alerta.querySelector('.obstacle-icon');
-	const titulo = alerta.querySelector('#obstacle-title') || alerta.querySelector('strong');
-	const mensaje = alerta.querySelector('#obstacle-message') || alerta.querySelector('p');
-	const accion = alerta.querySelector('#obstacle-action') || alerta.querySelector('.obstacle-action-row');
+    const icono = alerta.querySelector('.obstacle-icon');
+    const titulo = alerta.querySelector('#obstacle-title') || alerta.querySelector('strong');
+    const mensaje = alerta.querySelector('#obstacle-message') || alerta.querySelector('p');
+    const accion = alerta.querySelector('#obstacle-action') || alerta.querySelector('.obstacle-action-row');
 
-	if (icono) icono.textContent = '⚠️';
-	if (titulo) titulo.textContent = '¡AVISO! VEHÍCULO DETENIDO';
-	if (mensaje) mensaje.textContent = 'Tu vehículo sufrió una falla mecánica. ¡Presiona la tecla R para repararlo!';
-	if (accion) {
-		accion.innerHTML = `
+    if (icono) icono.textContent = '⚠️';
+    if (titulo) titulo.textContent = '¡AVISO! VEHÍCULO DETENIDO';
+    if (mensaje) mensaje.textContent = 'Tu vehículo sufrió una falla mecánica. ¡Presiona la tecla R para repararlo!';
+    if (accion) {
+        accion.innerHTML = `
 			<div class="key-pill pulse"><kbd>R</kbd> <span>PULSA R</span></div>
 			<div class="obstacle-progress-bar">
 				<div id="obstacle-progress-fill" class="obstacle-progress-fill" style="width: 0%"></div>
 			</div>
 			<span id="obstacle-counter" class="obstacle-counter">0 / ${pulsacionesNecesarias}</span>
 		`;
-	}
+    }
 
-	alerta.classList.remove('hidden');
-	alerta.classList.add('active');
-	mostrarAviso('¡Vehículo averiado! Presiona la tecla R cinco veces');
+    alerta.classList.remove('hidden');
+    alerta.classList.add('active');
+    mostrarAviso('¡Vehículo averiado! Presiona la tecla R cinco veces');
 }
 
 // Presenta el recuadro visual de teclas invertidas con su contador regresivo.
 function mostrarObstaculoInvertido(duracionMs = 4000) {
-	clearInterval(temporizadorCuentaAviso);
-	clearTimeout(temporizadorAlertaObstaculo);
+    clearInterval(temporizadorCuentaAviso);
+    clearTimeout(temporizadorAlertaObstaculo);
 
-	const alerta = obtenerElemento('obstacle-alert');
-	alerta.classList.remove('alert-stopped');
-	alerta.classList.add('alert-inverted');
+    const alerta = obtenerElemento('obstacle-alert');
+    alerta.classList.remove('alert-stopped');
+    alerta.classList.add('alert-inverted');
 
-	const icono = alerta.querySelector('.obstacle-icon');
-	const titulo = alerta.querySelector('#obstacle-title') || alerta.querySelector('strong');
-	const mensaje = alerta.querySelector('#obstacle-message') || alerta.querySelector('p');
-	const accion = alerta.querySelector('#obstacle-action') || alerta.querySelector('.obstacle-action-row');
+    const icono = alerta.querySelector('.obstacle-icon');
+    const titulo = alerta.querySelector('#obstacle-title') || alerta.querySelector('strong');
+    const mensaje = alerta.querySelector('#obstacle-message') || alerta.querySelector('p');
+    const accion = alerta.querySelector('#obstacle-action') || alerta.querySelector('.obstacle-action-row');
 
-	if (icono) icono.textContent = '🔄';
-	if (titulo) titulo.textContent = '¡AVISO! TECLAS INVERTIDAS';
-	if (mensaje) mensaje.textContent = '¡Tus controles han sido saboteados! Usa las flechas opuestas para avanzar:';
-	if (accion) {
-		accion.innerHTML = `
+    if (icono) icono.textContent = '🔄';
+    if (titulo) titulo.textContent = '¡AVISO! TECLAS INVERTIDAS';
+    if (mensaje) mensaje.textContent = '¡Tus controles han sido saboteados! Usa las flechas opuestas para avanzar:';
+    if (accion) {
+        accion.innerHTML = `
 			<div class="key-pill"><kbd>↓</kbd> <kbd>←</kbd> <span>AVANZAR</span></div>
 			<span id="obstacle-timer" class="obstacle-timer">⏳ ${Math.ceil(duracionMs / 1000)}s</span>
 		`;
-	}
+    }
 
-	alerta.classList.remove('hidden');
-	alerta.classList.add('active');
-	mostrarAviso('¡Controles invertidos! Usa flecha abajo o izquierda');
+    alerta.classList.remove('hidden');
+    alerta.classList.add('active');
+    mostrarAviso('¡Controles invertidos! Usa flecha abajo o izquierda');
 
-	let segundosRestantes = Math.ceil(duracionMs / 1000);
-	temporizadorCuentaAviso = setInterval(() => {
-		segundosRestantes -= 1;
-		const elTimer = obtenerElemento('obstacle-timer');
-		if (elTimer && segundosRestantes > 0) {
-			elTimer.textContent = `⏳ ${segundosRestantes}s`;
-		}
-		if (segundosRestantes <= 0) {
-			clearInterval(temporizadorCuentaAviso);
-		}
-	}, 1000);
+    let segundosRestantes = Math.ceil(duracionMs / 1000);
+    temporizadorCuentaAviso = setInterval(() => {
+        segundosRestantes -= 1;
+        const elTimer = obtenerElemento('obstacle-timer');
+        if (elTimer && segundosRestantes > 0) {
+            elTimer.textContent = `⏳ ${segundosRestantes}s`;
+        }
+        if (segundosRestantes <= 0) {
+            clearInterval(temporizadorCuentaAviso);
+        }
+    }, 1000);
 
-	temporizadorAlertaObstaculo = setTimeout(() => {
-		ocultarObstaculo();
-		mostrarAviso('¡Controles normalizados!');
-	}, duracionMs);
+    temporizadorAlertaObstaculo = setTimeout(() => {
+        ocultarObstaculo();
+        mostrarAviso('¡Controles normalizados!');
+    }, duracionMs);
 }
 
 // Oculta el recuadro del obstáculo y limpia sus temporizadores.
 function ocultarObstaculo() {
-	clearInterval(temporizadorCuentaAviso);
-	clearTimeout(temporizadorAlertaObstaculo);
-	const alerta = obtenerElemento('obstacle-alert');
-	if (alerta) {
-		alerta.classList.remove('active');
-		alerta.classList.add('hidden');
-	}
+    clearInterval(temporizadorCuentaAviso);
+    clearTimeout(temporizadorAlertaObstaculo);
+    const alerta = obtenerElemento('obstacle-alert');
+    if (alerta) {
+        alerta.classList.remove('active');
+        alerta.classList.add('hidden');
+    }
 }
 
 // Presenta en pantalla el tipo y la duración del obstáculo activo (función de compatibilidad).
 function mostrarObstaculo(titulo, detalle, duracion) {
-	if (duracion === 0) {
-		mostrarObstaculoDetenido();
-	} else {
-		mostrarObstaculoInvertido(duracion || 4000);
-	}
+    if (duracion === 0) {
+        mostrarObstaculoDetenido();
+    } else {
+        mostrarObstaculoInvertido(duracion || 4000);
+    }
 }
 
 // Programa el siguiente obstáculo usando una espera corta para el primero.
 function programarObstaculo(demora = intervaloObstaculos) {
-	clearTimeout(temporizadorObstaculo);
-	temporizadorObstaculo = setTimeout(activarObstaculo, demora);
+    clearTimeout(temporizadorObstaculo);
+    temporizadorObstaculo = setTimeout(activarObstaculo, demora);
 }
 
 // Registra una pulsación de R y libera el vehículo al completar la reparación.
 function repararVehiculo() {
-	if (!vehiculoDetenido || modo !== 'versus') return;
+    if (!vehiculoDetenido || modo !== 'versus') return;
 
-	pulsacionesReparacion += 1;
-	const porcentaje = Math.min(100, Math.round((pulsacionesReparacion / pulsacionesNecesarias) * 100));
-	const progressFill = obtenerElemento('obstacle-progress-fill');
-	const counter = obtenerElemento('obstacle-counter');
+    pulsacionesReparacion += 1;
+    const porcentaje = Math.min(100, Math.round((pulsacionesReparacion / pulsacionesNecesarias) * 100));
+    const progressFill = obtenerElemento('obstacle-progress-fill');
+    const counter = obtenerElemento('obstacle-counter');
 
-	if (progressFill) progressFill.style.width = `${porcentaje}%`;
-	if (counter) counter.textContent = `${pulsacionesReparacion} / ${pulsacionesNecesarias}`;
+    if (progressFill) progressFill.style.width = `${porcentaje}%`;
+    if (counter) counter.textContent = `${pulsacionesReparacion} / ${pulsacionesNecesarias}`;
 
-	const faltan = pulsacionesNecesarias - pulsacionesReparacion;
+    const faltan = pulsacionesNecesarias - pulsacionesReparacion;
 
-	if (faltan > 0) {
-		return;
-	}
+    if (faltan > 0) {
+        return;
+    }
 
-	vehiculoDetenido = false;
-	pulsacionesReparacion = 0;
-	ocultarObstaculo();
-	mostrarAviso('¡Vehículo reparado! Continúa la carrera');
+    vehiculoDetenido = false;
+    pulsacionesReparacion = 0;
+    ocultarObstaculo();
+    mostrarAviso('¡Vehículo reparado! Continúa la carrera');
 }
 
 // Inicia el desplazamiento continuo mientras se mantiene una flecha pulsada.
 function iniciarMovimientoLibre() {
-	if (!temporizadorMovimiento) {
-		temporizadorMovimiento = setInterval(
-			moverJugadorLibre,
-			intervaloMovimiento
-		);
-	}
+    if (!temporizadorMovimiento) {
+        temporizadorMovimiento = setInterval(
+            moverJugadorLibre,
+            intervaloMovimiento
+        );
+    }
 }
 
 // Detiene el temporizador cuando el jugador suelta todas las flechas.
 function detenerMovimientoLibre() {
-	if (!teclasPresionadas.size && temporizadorMovimiento) {
-		clearInterval(temporizadorMovimiento);
-		temporizadorMovimiento = undefined;
-	}
+    if (!teclasPresionadas.size && temporizadorMovimiento) {
+        clearInterval(temporizadorMovimiento);
+        temporizadorMovimiento = undefined;
+    }
 }
 
 // Calcula el resultado, guarda el récord y muestra el resumen de la partida.
 function finalizarPartida(gano) {
-	clearInterval(idTemporizador);
-	clearInterval(temporizadorMovimiento);
-	clearInterval(temporizadorCarrera);
-	clearInterval(temporizadorCuentaRegresiva);
-	clearInterval(temporizadorCuentaAviso);
-	clearTimeout(temporizadorObstaculo);
-	clearTimeout(temporizadorAlertaObstaculo);
-	teclasPresionadas.clear();
-	temporizadorMovimiento = undefined;
-	carreraIniciada = false;
-	ocultarObstaculo();
+    clearInterval(idTemporizador);
+    clearInterval(temporizadorMovimiento);
+    clearInterval(temporizadorCarrera);
+    clearInterval(temporizadorCuentaRegresiva);
+    clearInterval(temporizadorCuentaAviso);
+    clearTimeout(temporizadorObstaculo);
+    clearTimeout(temporizadorAlertaObstaculo);
+    teclasPresionadas.clear();
+    temporizadorMovimiento = undefined;
+    carreraIniciada = false;
+    ocultarObstaculo();
 
-	const segundos = Math.floor((Date.now() - inicioPartida) / 1000);
-	const pasos = modo === 'manual' ? pasosJugador : caminoJugador.length - 1;
-	const rutaEficiente = pasos === caminoOptimo.length - 1;
-	const puntos = gano ? 200 : 0;
+    const segundos = Math.floor((Date.now() - inicioPartida) / 1000);
+    const pasos = modo === 'manual' ? pasosJugador : caminoJugador.length - 1;
+    const rutaEficiente = pasos === caminoOptimo.length - 1;
+    const puntos = gano ? 200 : 0;
 
-	puntuacion += puntos;
+    puntuacion += puntos;
 
-	if (puntuacion > mejorPuntuacion) {
-		mejorPuntuacion = puntuacion;
-		localStorage.setItem('bfs-record', mejorPuntuacion);
-	}
+    if (puntuacion > mejorPuntuacion) {
+        mejorPuntuacion = puntuacion;
+        localStorage.setItem('bfs-record', mejorPuntuacion);
+    }
 
-	actualizarPanel();
-	obtenerElemento('result-title').textContent = gano ? 'RUTA CONCLUIDA' : 'TIEMPO AGOTADO';
-	obtenerElemento('result-message').textContent = gano
-		? `${nombreJugador}, llegaste a ${lugares[destino].nombre}. Recibiste 200 puntos. ${rutaEficiente
-			? 'Encontraste la ruta óptima.'
-			: 'Llegaste, pero BFS todavía puede enseñarte un camino más corto.'}`
-		: 'La máquina encontró primero el destino. Analiza la cola BFS e inténtalo de nuevo.';
-	obtenerElemento('result-time').textContent = `${String(Math.floor(segundos / 60)).padStart(2, '0')}:${String(segundos % 60).padStart(2, '0')}`;
-	obtenerElemento('result-steps').textContent = pasos;
-	obtenerElemento('result-optimal').textContent = caminoOptimo.length - 1;
-	obtenerElemento('result-modal').classList.remove('hidden');
+    actualizarPanel();
+    obtenerElemento('result-title').textContent = gano ? 'RUTA CONCLUIDA' : 'TIEMPO AGOTADO';
+    obtenerElemento('result-message').textContent = gano
+        ? `${nombreJugador}, llegaste a ${lugares[destino].nombre}. Recibiste 200 puntos. ${rutaEficiente
+            ? 'Encontraste la ruta óptima.'
+            : 'Llegaste, pero BFS todavía puede enseñarte un camino más corto.'}`
+        : 'La máquina encontró primero el destino. Analiza la cola BFS e inténtalo de nuevo.';
+    obtenerElemento('result-time').textContent = `${String(Math.floor(segundos / 60)).padStart(2, '0')}:${String(segundos % 60).padStart(2, '0')}`;
+    obtenerElemento('result-steps').textContent = pasos;
+    obtenerElemento('result-optimal').textContent = caminoOptimo.length - 1;
+    obtenerElemento('result-modal').classList.remove('hidden');
 }
 
 // Avanza suavemente por las calles calculadas hasta alcanzar el destino.
 function ejecutarAutopiloto() {
-	temporizadorAutomatico = setInterval(() => {
-		if (!rutaCallesLista) return;
-		// El autopiloto recorre la geometría de calles, no una línea entre nodos.
-		const trayectoria = geometriaRutaCalles;
-		if (!trayectoria?.length) return;
-		const avance = avanzarPorTrayectoria(
-			posicionJugador,
-			trayectoria,
-			indiceCalleAutopiloto,
-			velocidadAutopiloto
-		);
-		posicionJugador = avance.posicion;
-		indiceCalleAutopiloto = avance.indice;
-		marcadorJugador.setLatLng(posicionJugador);
+    temporizadorAutomatico = setInterval(() => {
+        if (!rutaCallesLista) return;
+        // El autopiloto recorre la geometría de calles, no una línea entre nodos.
+        const trayectoria = geometriaRutaCalles;
+        if (!trayectoria?.length) return;
+        const avance = avanzarPorTrayectoria(
+            posicionJugador,
+            trayectoria,
+            indiceCalleAutopiloto,
+            velocidadAutopiloto
+        );
+        posicionJugador = avance.posicion;
+        indiceCalleAutopiloto = avance.indice;
+        marcadorJugador.setLatLng(posicionJugador);
 
-		if (avance.indice >= trayectoria.length - 1) {
-			clearInterval(temporizadorAutomatico);
-			actual = destino;
-			finalizarPartida(true);
-			return;
-		}
+        if (avance.indice >= trayectoria.length - 1) {
+            clearInterval(temporizadorAutomatico);
+            actual = destino;
+            finalizarPartida(true);
+            return;
+        }
 
-		actualizarPanel();
-	}, intervaloMovimiento);
+        actualizarPanel();
+    }, intervaloMovimiento);
 }
 
 // Simula el avance de la máquina y comunica el progreso de BFS.
 function ejecutarMaquina() {
-	carreraIniciada = true;
-	posicionMaquina = obtenerPunto(origen);
-	marcadorMaquina.setLatLng(posicionMaquina);
-	clearInterval(temporizadorCarrera);
-	mostrarAviso(`BFS: ${caminoOptimo.length - 1} pasos calculados`);
-	programarObstaculo(demoraPrimerObstaculo);
-	temporizadorCarrera = setInterval(moverMaquina, intervaloMovimiento);
+    carreraIniciada = true;
+    posicionMaquina = obtenerPunto(origen);
+    marcadorMaquina.setLatLng(posicionMaquina);
+    clearInterval(temporizadorCarrera);
+    mostrarAviso(`BFS: ${caminoOptimo.length - 1} pasos calculados`);
+    programarObstaculo(demoraPrimerObstaculo);
+    temporizadorCarrera = setInterval(moverMaquina, intervaloMovimiento);
 }
 
 // Muestra un aviso temporal en la parte inferior del mapa.
 function mostrarAviso(mensaje) {
-	obtenerElemento('toast').textContent = mensaje;
-	obtenerElemento('toast').classList.add('show');
+    obtenerElemento('toast').textContent = mensaje;
+    obtenerElemento('toast').classList.add('show');
 
-	setTimeout(() => {
-		obtenerElemento('toast').classList.remove('show');
-	}, 2800);
+    setTimeout(() => {
+        obtenerElemento('toast').classList.remove('show');
+    }, 2800);
 }
 
 // Texto que se muestra en la barra superior según la modalidad activa.
 const etiquetasModo = {
-	manual: 'PILOTO MANUAL',
-	auto: 'AUTOPILOTO BFS',
-	versus: 'HUMANO VS BFS'
+    manual: 'PILOTO MANUAL',
+    auto: 'AUTOPILOTO BFS',
+    versus: 'HUMANO VS BFS'
 };
 
 // Genera las opciones de los selectores usando el catálogo único de lugares.
 const opcionesLugar = Object.entries(lugares)
-	.map(([identificador, lugar]) => `<option value="${identificador}">${lugar.nombre}</option>`)
-	.join('');
+    .map(([identificador, lugar]) => `<option value="${identificador}">${lugar.nombre}</option>`)
+    .join('');
 obtenerElemento('origin-select').innerHTML = opcionesLugar;
 obtenerElemento('destination-select').innerHTML = opcionesLugar;
 obtenerElemento('origin-select').value = 'ejido';
@@ -924,27 +924,27 @@ obtenerElemento('destination-select').value = 'carolina';
 
 // Inicia la aplicación: oculta la bienvenida, prepara Leaflet y crea la primera ruta.
 obtenerElemento('start-form').addEventListener('submit', (evento) => {
-	evento.preventDefault();
-	nombreJugador = obtenerElemento('player-name').value.trim();
+    evento.preventDefault();
+    nombreJugador = obtenerElemento('player-name').value.trim();
 
-	if (!nombreJugador) return;
+    if (!nombreJugador) return;
 
-	obtenerElemento('player-label').textContent = nombreJugador.toUpperCase();
-	obtenerElemento('welcome-screen').classList.add('hidden');
-	obtenerElemento('game-screen').classList.remove('hidden');
+    obtenerElemento('player-label').textContent = nombreJugador.toUpperCase();
+    obtenerElemento('welcome-screen').classList.add('hidden');
+    obtenerElemento('game-screen').classList.remove('hidden');
 
-	if (!mapa) {
-		inicializarMapa();
-	}
+    if (!mapa) {
+        inicializarMapa();
+    }
 
-	generarRutaAutomatica();
+    generarRutaAutomatica();
 });
 
 // Limpia la validación anterior cuando el usuario cambia los puntos A o B.
 document.querySelectorAll('#origin-select, #destination-select').forEach((selector) => {
-	selector.addEventListener('change', () => {
-		obtenerElemento('destination-select').setCustomValidity('');
-	});
+    selector.addEventListener('change', () => {
+        obtenerElemento('destination-select').setCustomValidity('');
+    });
 });
 
 // Conecta los controles principales con sus acciones de juego.
@@ -953,56 +953,56 @@ obtenerElemento('calculate-route-button').addEventListener('click', calcularRuta
 obtenerElemento('new-route-button').addEventListener('click', generarRutaAutomatica);
 
 obtenerElemento('continue-button').addEventListener('click', () => {
-	obtenerElemento('result-modal').classList.add('hidden');
-	generarRuta(origen, destino);
+    obtenerElemento('result-modal').classList.add('hidden');
+    generarRuta(origen, destino);
 });
 
 // Cambiar de modalidad reinicia el recorrido actual sin cambiar origen ni destino.
 document.querySelectorAll('.mode-button').forEach((button) => {
-	button.addEventListener('click', () => {
-		document.querySelectorAll('.mode-button').forEach((item) => {
-			item.classList.remove('active');
-		});
+    button.addEventListener('click', () => {
+        document.querySelectorAll('.mode-button').forEach((item) => {
+            item.classList.remove('active');
+        });
 
-		button.classList.add('active');
-		modo = button.dataset.mode;
-		obtenerElemento('mode-label').textContent = etiquetasModo[modo];
-		generarRuta(origen, destino);
-	});
+        button.classList.add('active');
+        modo = button.dataset.mode;
+        obtenerElemento('mode-label').textContent = etiquetasModo[modo];
+        generarRuta(origen, destino);
+    });
 });
 
 // Cada vehículo de la tienda puede equiparse mediante su atributo data-skin.
 document.querySelectorAll('.skin-button').forEach((boton) => {
-	boton.addEventListener('click', () => comprarVehiculo(boton.dataset.skin));
+    boton.addEventListener('click', () => comprarVehiculo(boton.dataset.skin));
 });
 
 // Controla flechas, SHIFT y R para mover, activar nitro o reparar el vehículo.
 document.addEventListener('keydown', (evento) => {
-	const teclasDeMovimiento = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+    const teclasDeMovimiento = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
 
-	if (evento.key === 'Shift') {
-		activarNitro();
-		return;
-	}
+    if (evento.key === 'Shift') {
+        activarNitro();
+        return;
+    }
 
-	if (evento.key.toLowerCase() === 'r') {
-		repararVehiculo();
-		return;
-	}
+    if (evento.key.toLowerCase() === 'r') {
+        repararVehiculo();
+        return;
+    }
 
-	if ((modo !== 'manual' && modo !== 'versus') || !teclasDeMovimiento.includes(evento.key)) return;
+    if ((modo !== 'manual' && modo !== 'versus') || !teclasDeMovimiento.includes(evento.key)) return;
 
-	evento.preventDefault();
-	teclasPresionadas.add(evento.key);
-	iniciarMovimientoLibre();
+    evento.preventDefault();
+    teclasPresionadas.add(evento.key);
+    iniciarMovimientoLibre();
 });
 
 // Libera las flechas al soltarlas para detener el movimiento continuo.
 document.addEventListener('keyup', (evento) => {
-	const teclasDeMovimiento = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+    const teclasDeMovimiento = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
 
-	if (!teclasDeMovimiento.includes(evento.key)) return;
+    if (!teclasDeMovimiento.includes(evento.key)) return;
 
-	teclasPresionadas.delete(evento.key);
-	detenerMovimientoLibre();
+    teclasPresionadas.delete(evento.key);
+    detenerMovimientoLibre();
 });
