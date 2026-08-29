@@ -1,127 +1,127 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <!-- Configuración básica de idioma, escala móvil y título de la aplicación. -->
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NEXO RODANTE // Quito</title>
-  <!-- Fuentes externas usadas para diferenciar títulos y datos técnicoss. -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <!-- Leaflet proporciona el mapa interactivo y sus estilos base. -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="proyectofinalbfs.css">
+    <!-- Configuración básica de idioma, escala móvil y título de la aplicación. -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXO RODANTE // Quito</title>
+    <!-- Fuentes externas usadas para diferenciar títulos y datos técnicoss. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet proporciona el mapa interactivo y sus estilos base. -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="proyectofinalbfs.css">
 </head>
 <body>
-  <!-- Contenedor principal que agrupa la pantalla de bienvenida y el juego. -->
-  <main class="app-shell">
+<!-- Contenedor principal que agrupa la pantalla de bienvenida y el juego. -->
+<main class="app-shell">
     <!-- Pantalla inicial: solo identifica al jugador antes de comenzar. -->
     <section id="welcome-screen" class="welcome-screen">
-      <div class="welcome-copy">
-        <p class="eyebrow">NEXO RODANTE // QUITO</p>
-        <h1>NEXO<span>//</span>RODANTE</h1>
-        <p class="lead">Conduce por Quito, encuentra tu destino y convierte cada recorrido en una nueva recompensa.</p>
-        <form id="start-form" class="start-form">
-          <label for="player-name">IDENTIFICADOR DEL CONDUCTOR</label>
-          <div class="input-row">
-            <input id="player-name" name="playerName" maxlength="18" autocomplete="off" placeholder="Escribe tu nombre..." required>
-            <button class="primary-button" type="submit">INICIAR <span>↵</span></button>
-          </div>
-        </form>
-      </div>
-      <!-- Ilustración decorativa de la red de rutas; no interviene en la lógica. -->
-      <div class="welcome-art" aria-hidden="true">
-        <div class="radar-grid"></div>
-        <div class="route-line"></div>
-        <div class="route-node node-a">A</div><div class="route-node node-b">B</div><div class="route-node node-c">C</div>
-        <div class="art-label label-a">EL EJIDO</div><div class="art-label label-b">QUICENTRO</div>
-        <div class="signal">SIGNAL<br><strong>ONLINE</strong></div>
-      </div>
+        <div class="welcome-copy">
+            <p class="eyebrow">NEXO RODANTE // QUITO</p>
+            <h1>NEXO<span>//</span>RODANTE</h1>
+            <p class="lead">Conduce por Quito, encuentra tu destino y convierte cada recorrido en una nueva recompensa.</p>
+            <form id="start-form" class="start-form">
+                <label for="player-name">IDENTIFICADOR DEL CONDUCTOR</label>
+                <div class="input-row">
+                    <input id="player-name" name="playerName" maxlength="18" autocomplete="off" placeholder="Escribe tu nombre..." required>
+                    <button class="primary-button" type="submit">INICIAR <span>↵</span></button>
+                </div>
+            </form>
+        </div>
+        <!-- Ilustración decorativa de la red de rutas; no interviene en la lógica. -->
+        <div class="welcome-art" aria-hidden="true">
+            <div class="radar-grid"></div>
+            <div class="route-line"></div>
+            <div class="route-node node-a">A</div><div class="route-node node-b">B</div><div class="route-node node-c">C</div>
+            <div class="art-label label-a">EL EJIDO</div><div class="art-label label-b">QUICENTRO</div>
+            <div class="signal">SIGNAL<br><strong>ONLINE</strong></div>
+        </div>
     </section>
 
     <!-- Pantalla principal: controles, mapa, modos de juego y telemetría. -->
     <section id="game-screen" class="game-screen hidden">
-      <!-- Barra superior con marca, jugador actual y salida. -->
-      <header class="topbar">
-        <div class="brand">NEXO<span>//</span>RODANTE <small>QUITO NETWORK</small></div>
-        <div class="player-badge"><span class="status-dot"></span><span id="player-label">PILOTO</span></div>
-        <button id="reset-button" class="text-button" type="button">SALIR / CAMBIAR PILOTO</button>
-      </header>
-      <div class="game-grid">
-        <!-- Panel izquierdo: misión, selección de modo y vehículos. -->
-        <aside class="control-panel">
-          <div class="section-heading"><span>01</span> MISIÓN ACTIVA</div>
-          <div class="mission-card">
-            <div class="mission-label">ORIGEN</div><div id="origin-label" class="place-value">--</div>
-            <div class="arrow-down">↓</div>
-            <div class="mission-label">DESTINO</div><div id="destination-label" class="place-value accent">--</div>
-            <!-- Estos controles permiten recalcular manualmente el trayecto dentro del juego. -->
-            <div class="route-selection">
-              <label for="origin-select">PUNTO A</label>
-              <select id="origin-select" name="origin"></select>
-              <label for="destination-select">PUNTO B</label>
-              <select id="destination-select" name="destination"></select>
-              <button id="calculate-route-button" class="secondary-button" type="button">CALCULAR RUTA</button>
-            </div>
-          </div>
-          <div class="section-heading"><span>02</span> MODO DE JUEGO</div>
-          <!-- Cada botón cambia la forma en que se recorre la ruta BFS. -->
-          <div class="mode-list">
-            <button class="mode-button active" data-mode="manual" type="button"><b>01</b><span><strong>PILOTO MANUAL</strong><small>Conduce con las flechas</small></span></button>
-            <button class="mode-button" data-mode="auto" type="button"><b>02</b><span><strong>AUTOPILOTO BFS</strong><small>Observa el algoritmo resolver</small></span></button>
-            <button class="mode-button" data-mode="versus" type="button"><b>03</b><span><strong>HUMANO VS BFS</strong><small>Gana por eficiencia</small></span></button>
-          </div>
-          <div class="scoreboard">
-            <div><span>PUNTOS</span><strong id="score-value">0000</strong></div>
-            <div><span>RÉCORD</span><strong id="record-value">0000</strong></div>
-          </div>
-          <div class="shop-panel">
-            <div class="section-heading"><span>03</span> TIENDA DE VEHÍCULOS</div>
-            <p class="shop-balance">SALDO <strong id="shop-balance">0000</strong></p>
-            <div id="shop-list" class="shop-list">
-              <button class="skin-button active" data-skin="clasico" type="button"><span class="skin-preview skin-clasico">▰</span><span><strong>CLÁSICO</strong><small>GRATIS</small></span></button>
-              <button class="skin-button" data-skin="turbo" type="button"><span class="skin-preview skin-turbo">▰</span><span><strong>TURBO</strong><small>200 PUNTOS</small></span></button>
-              <button class="skin-button" data-skin="neon" type="button"><span class="skin-preview skin-neon">▰</span><span><strong>NEÓN</strong><small>400 PUNTOS</small></span></button>
-              <button class="skin-button" data-skin="taxi" type="button"><span class="skin-preview skin-taxi">▰</span><span><strong>TAXI</strong><small>600 PUNTOS</small></span></button>
-            </div>
-          </div>
-          <!-- Este botón crea una ruta aleatoria y la inicia en el modo seleccionado. -->
-          <button id="new-route-button" class="secondary-button" type="button">↻ GENERAR RUTA ALEATORIA</button>
-        </aside>
-        <!-- Panel central: mapa, ruta, marcadores, avisos y contador. -->
-        <section class="map-panel">
-          <div class="map-meta"><span id="mode-label">PILOTO MANUAL</span><span id="connection-label">● MAPA EN LÍNEA</span></div>
-          <div id="map"></div>
-          <div id="race-countdown" class="race-countdown hidden">5</div>
-          <div id="obstacle-alert" class="obstacle-alert hidden" role="alert">
-            <div class="obstacle-alert-header">
-              <span class="obstacle-icon">⚠️</span>
-              <strong id="obstacle-title">¡AVISO! VEHÍCULO DETENIDO</strong>
-            </div>
-            <p id="obstacle-message">Tu vehículo se detuvo. Presiona R cinco veces para continuar</p>
-            <div id="obstacle-action" class="obstacle-action-row"></div>
-          </div>
-          <div class="map-legend"><span><i class="legend-dot start-dot"></i> ORIGEN</span><span><i class="legend-dot end-dot"></i> DESTINO</span><span><i class="legend-line optimal-line"></i> RUTA BFS</span><span><i class="legend-line player-line"></i> MI RECORRIDO</span><span><i class="legend-nitro"></i> NITRO</span></div>
-          <div id="toast" class="toast" role="status"></div>
-        </section>
-        <!-- Panel derecho: datos de progreso y explicación visual de la cola BFS. -->
-        <aside class="telemetry-panel">
-          <div class="section-heading"><span>04</span> TELEMETRÍA</div>
-          <div class="telemetry-row"><span>TIEMPO</span><strong id="time-value">00:00</strong></div>
-          <div class="telemetry-row"><span>MOVIMIENTO</span><strong id="steps-value">0</strong></div>
-          <div class="telemetry-row"><span>ÓPTIMO BFS</span><strong id="optimal-value">--</strong></div>
-          <div class="telemetry-row"><span>POSICIÓN</span><strong id="position-value">--</strong></div>
-          <div class="algorithm-box"><div class="algorithm-title">COLA BFS <span>FIFO</span></div><div id="queue-value" class="queue-value">Esperando inicio...</div></div>
-          <div class="controls-hint"><div class="section-heading"><span>05</span> CONTROLES</div><div class="arrow-pad"><kbd>↑</kbd><div><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></div></div><p>Conduce con las flechas. Recoge cada NITRO y pulsa SHIFT: dura 5 segundos. Si te detienen, presiona R cinco veces.</p></div>
-        </aside>
-      </div>
+        <!-- Barra superior con marca, jugador actual y salida. -->
+        <header class="topbar">
+            <div class="brand">NEXO<span>//</span>RODANTE <small>QUITO NETWORK</small></div>
+            <div class="player-badge"><span class="status-dot"></span><span id="player-label">PILOTO</span></div>
+            <button id="reset-button" class="text-button" type="button">SALIR / CAMBIAR PILOTO</button>
+        </header>
+        <div class="game-grid">
+            <!-- Panel izquierdo: misión, selección de modo y vehículos. -->
+            <aside class="control-panel">
+                <div class="section-heading"><span>01</span> MISIÓN ACTIVA</div>
+                <div class="mission-card">
+                    <div class="mission-label">ORIGEN</div><div id="origin-label" class="place-value">--</div>
+                    <div class="arrow-down">↓</div>
+                    <div class="mission-label">DESTINO</div><div id="destination-label" class="place-value accent">--</div>
+                    <!-- Estos controles permiten recalcular manualmente el trayecto dentro del juego. -->
+                    <div class="route-selection">
+                        <label for="origin-select">PUNTO A</label>
+                        <select id="origin-select" name="origin"></select>
+                        <label for="destination-select">PUNTO B</label>
+                        <select id="destination-select" name="destination"></select>
+                        <button id="calculate-route-button" class="secondary-button" type="button">CALCULAR RUTA</button>
+                    </div>
+                </div>
+                <div class="section-heading"><span>02</span> MODO DE JUEGO</div>
+                <!-- Cada botón cambia la forma en que se recorre la ruta BFS. -->
+                <div class="mode-list">
+                    <button class="mode-button active" data-mode="manual" type="button"><b>01</b><span><strong>PILOTO MANUAL</strong><small>Conduce con las flechas</small></span></button>
+                    <button class="mode-button" data-mode="auto" type="button"><b>02</b><span><strong>AUTOPILOTO BFS</strong><small>Observa el algoritmo resolver</small></span></button>
+                    <button class="mode-button" data-mode="versus" type="button"><b>03</b><span><strong>HUMANO VS BFS</strong><small>Gana por eficiencia</small></span></button>
+                </div>
+                <div class="scoreboard">
+                    <div><span>PUNTOS</span><strong id="score-value">0000</strong></div>
+                    <div><span>RÉCORD</span><strong id="record-value">0000</strong></div>
+                </div>
+                <div class="shop-panel">
+                    <div class="section-heading"><span>03</span> TIENDA DE VEHÍCULOS</div>
+                    <p class="shop-balance">SALDO <strong id="shop-balance">0000</strong></p>
+                    <div id="shop-list" class="shop-list">
+                        <button class="skin-button active" data-skin="clasico" type="button"><span class="skin-preview skin-clasico">▰</span><span><strong>CLÁSICO</strong><small>GRATIS</small></span></button>
+                        <button class="skin-button" data-skin="turbo" type="button"><span class="skin-preview skin-turbo">▰</span><span><strong>TURBO</strong><small>200 PUNTOS</small></span></button>
+                        <button class="skin-button" data-skin="neon" type="button"><span class="skin-preview skin-neon">▰</span><span><strong>NEÓN</strong><small>400 PUNTOS</small></span></button>
+                        <button class="skin-button" data-skin="taxi" type="button"><span class="skin-preview skin-taxi">▰</span><span><strong>TAXI</strong><small>600 PUNTOS</small></span></button>
+                    </div>
+                </div>
+                <!-- Este botón crea una ruta aleatoria y la inicia en el modo seleccionado. -->
+                <button id="new-route-button" class="secondary-button" type="button">↻ GENERAR RUTA ALEATORIA</button>
+            </aside>
+            <!-- Panel central: mapa, ruta, marcadores, avisos y contador. -->
+            <section class="map-panel">
+                <div class="map-meta"><span id="mode-label">PILOTO MANUAL</span><span id="connection-label">● MAPA EN LÍNEA</span></div>
+                <div id="map"></div>
+                <div id="race-countdown" class="race-countdown hidden">5</div>
+                <div id="obstacle-alert" class="obstacle-alert hidden" role="alert">
+                    <div class="obstacle-alert-header">
+                        <span class="obstacle-icon">⚠️</span>
+                        <strong id="obstacle-title">¡AVISO! VEHÍCULO DETENIDO</strong>
+                    </div>
+                    <p id="obstacle-message">Tu vehículo se detuvo. Presiona R cinco veces para continuar</p>
+                    <div id="obstacle-action" class="obstacle-action-row"></div>
+                </div>
+                <div class="map-legend"><span><i class="legend-dot start-dot"></i> ORIGEN</span><span><i class="legend-dot end-dot"></i> DESTINO</span><span><i class="legend-line optimal-line"></i> RUTA BFS</span><span><i class="legend-line player-line"></i> MI RECORRIDO</span><span><i class="legend-nitro"></i> NITRO</span></div>
+                <div id="toast" class="toast" role="status"></div>
+            </section>
+            <!-- Panel derecho: datos de progreso y explicación visual de la cola BFS. -->
+            <aside class="telemetry-panel">
+                <div class="section-heading"><span>04</span> TELEMETRÍA</div>
+                <div class="telemetry-row"><span>TIEMPO</span><strong id="time-value">00:00</strong></div>
+                <div class="telemetry-row"><span>MOVIMIENTO</span><strong id="steps-value">0</strong></div>
+                <div class="telemetry-row"><span>ÓPTIMO BFS</span><strong id="optimal-value">--</strong></div>
+                <div class="telemetry-row"><span>POSICIÓN</span><strong id="position-value">--</strong></div>
+                <div class="algorithm-box"><div class="algorithm-title">COLA BFS <span>FIFO</span></div><div id="queue-value" class="queue-value">Esperando inicio...</div></div>
+                <div class="controls-hint"><div class="section-heading"><span>05</span> CONTROLES</div><div class="arrow-pad"><kbd>↑</kbd><div><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></div></div><p>Conduce con las flechas. Recoge cada NITRO y pulsa SHIFT: dura 5 segundos. Si te detienen, presiona R cinco veces.</p></div>
+            </aside>
+        </div>
     </section>
     <!-- Modal final con el resumen del recorrido y opción para continuar. -->
     <div id="result-modal" class="modal hidden"><div class="result-card"><p class="eyebrow">TRANSMISIÓN COMPLETADA</p><h2 id="result-title">RUTA CONCLUIDA</h2><p id="result-message"></p><div class="result-stats"><div><span>TIEMPO</span><strong id="result-time">--</strong></div><div><span>MOVIMIENTO</span><strong id="result-steps">--</strong></div><div><span>ÓPTIMO BFS</span><strong id="result-optimal">--</strong></div></div><button id="continue-button" class="primary-button" type="button">CONTINUAR <span>→</span></button></div></div>
-  </main>
-  <!-- Leaflet debe cargarse antes del archivo JavaScript de la aplicación. -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="proyectofinalbfs.js"></script>
+</main>
+<!-- Leaflet debe cargarse antes del archivo JavaScript de la aplicación. -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="proyectofinalbfs.js"></script>
 </body>
 </html>
