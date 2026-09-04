@@ -63,3 +63,4 @@ document.querySelectorAll('.mode-button').forEach((button) => {
 document.querySelectorAll('.skin-button').forEach((boton) => {
     boton.addEventListener('click', () => comprarVehiculo(boton.dataset.skin));
 });
+

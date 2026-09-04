@@ -12,6 +12,8 @@
     <!-- Leaflet proporciona el mapa interactivo y sus estilos base. -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="proyectofinalbfs.css">
+    <!-- Three.js dibuja y anima la vista 3D del modo de conducción. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
 </head>
 <body>
 <!-- Contenedor principal que agrupa la pantalla de bienvenida y el juego. -->
@@ -65,6 +67,7 @@
                         <button id="calculate-route-button" class="secondary-button" type="button">CALCULAR RUTA</button>
                     </div>
                 </div>
+                <button id="open-3d-button" class="primary-button modo3d-button" type="button">🚗 MANEJAR EN 3D</button>
                 <div class="section-heading"><span>02</span> MODO DE JUEGO</div>
                 <!-- Cada botón cambia la forma en que se recorre la ruta BFS. -->
                 <div class="mode-list">
@@ -117,6 +120,23 @@
             </aside>
         </div>
     </section>
+    <!-- Vista 3D: pantalla completa con el carro manejable sobre la ruta activa. -->
+    <section id="modo3d-screen" class="modo3d-screen hidden">
+        <div id="modo3d-canvas"></div>
+        <div class="modo3d-hud modo3d-hud-top">
+            <div class="modo3d-brand">NEXO<span>//</span>RODANTE <small>VISTA 3D</small></div>
+            <button id="close-3d-button" class="text-button modo3d-exit" type="button">✕ SALIR (ESC)</button>
+        </div>
+        <div class="modo3d-hud modo3d-hud-bottom">
+            <div class="modo3d-stat"><span>ORIGEN</span><strong id="modo3d-origen">--</strong></div>
+            <div class="modo3d-stat"><span>DESTINO</span><strong id="modo3d-destino">--</strong></div>
+            <div class="modo3d-stat"><span>VELOCIDAD</span><strong id="modo3d-velocidad">0 km/h</strong></div>
+            <div class="modo3d-stat"><span>DISTANCIA RESTANTE</span><strong id="modo3d-distancia">-- m</strong></div>
+        </div>
+        <div id="modo3d-llegada" class="modo3d-llegada hidden">¡LLEGASTE AL DESTINO!</div>
+        <div class="modo3d-controles"><kbd>↑</kbd> acelerar &nbsp;<kbd>↓</kbd> frenar/reversa &nbsp;<kbd>←</kbd><kbd>→</kbd> girar</div>
+        <div id="modo3d-cargando" class="modo3d-cargando">CARGANDO MUNDO 3D...</div>
+    </section>
     <!-- Modal final con el resumen del recorrido y opción para continuar. -->
     <div id="result-modal" class="modal hidden"><div class="result-card"><p class="eyebrow">TRANSMISIÓN COMPLETADA</p><h2 id="result-title">RUTA CONCLUIDA</h2><p id="result-message"></p><div class="result-stats"><div><span>TIEMPO</span><strong id="result-time">--</strong></div><div><span>MOVIMIENTO</span><strong id="result-steps">--</strong></div><div><span>ÓPTIMO BFS</span><strong id="result-optimal">--</strong></div></div><button id="continue-button" class="primary-button" type="button">CONTINUAR <span>→</span></button></div></div>
 </main>
@@ -133,6 +153,7 @@
 <script src="src/obstaculos.js"></script>
 <script src="src/controles.js"></script>
 <script src="src/partida.js"></script>
+<script src="src/mundo3d.js"></script>
 <script src="src/principal.js"></script>
 </body>
 </html>

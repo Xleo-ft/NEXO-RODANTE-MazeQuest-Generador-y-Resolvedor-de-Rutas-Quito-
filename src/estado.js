@@ -59,3 +59,6 @@ let vehiculosDesbloqueados = JSON.parse(
     localStorage.getItem('vehiculos-desbloqueados') || '["clasico"]'
 );
 let vehiculoSeleccionado = localStorage.getItem('vehiculo-seleccionado') || 'clasico';
+
+// Indica si la vista 3D está abierta, para pausar los controles del mapa 2D.
+let modo3DActivo = false;
