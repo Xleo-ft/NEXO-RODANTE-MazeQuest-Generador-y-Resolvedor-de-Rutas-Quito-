@@ -66,6 +66,24 @@
                         <select id="destination-select" name="destination"></select>
                         <button id="calculate-route-button" class="secondary-button" type="button">CALCULAR RUTA</button>
                     </div>
+                    <!-- Permite ir a cualquier dirección real (por ejemplo "mi casa") en vez de solo los lugares predeterminados. -->
+                    <div class="custom-place">
+                        <label for="custom-place-input">LUGAR PERSONALIZADO</label>
+                        <div class="custom-place-row">
+                            <input id="custom-place-input" type="text" autocomplete="off" placeholder="Ej: mi casa, una calle, un barrio...">
+                            <button id="custom-place-search" class="secondary-button" type="button">BUSCAR</button>
+                        </div>
+                        <button id="custom-place-locate" class="text-button custom-place-locate" type="button">📍 Usar mi ubicación actual</button>
+                        <p id="custom-place-status" class="custom-place-status"></p>
+                        <ul id="custom-place-suggestions" class="custom-place-suggestions hidden"></ul>
+                        <div id="custom-place-result" class="custom-place-result hidden">
+                            <p id="custom-place-name" class="custom-place-name"></p>
+                            <div class="custom-place-actions">
+                                <button id="custom-place-use-origin" class="secondary-button" type="button">USAR COMO A</button>
+                                <button id="custom-place-use-destination" class="secondary-button" type="button">USAR COMO B</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <button id="open-3d-button" class="primary-button modo3d-button" type="button">🚗 MANEJAR EN 3D</button>
                 <div class="section-heading"><span>02</span> MODO DE JUEGO</div>
@@ -144,6 +162,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="src/datos/lugares.js"></script>
 <script src="src/utilidades/dom.js"></script>
+<script src="src/geocodificacion.js"></script>
 <script src="src/config.js"></script>
 <script src="src/estado.js"></script>
 <script src="src/algoritmo/bfs.js"></script>

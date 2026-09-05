@@ -569,6 +569,110 @@ input {
     padding: 10px 8px;
     font-size: 9px;
 }
+/* Buscador de direcciones/lugares libres (por ejemplo "mi casa") dentro de la misión. */
+.custom-place {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px dashed #53615b;
+}
+.custom-place label {
+    display: block;
+    margin: 0 0 9px;
+    color: var(--lime);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+}
+.custom-place-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.custom-place-row input {
+    width: 100%;
+    min-height: 52px;
+    padding: 0 14px;
+    border: 1px solid #53615b;
+    background: #263432;
+    color: var(--paper);
+    font: 500 15px var(--mono);
+    outline: 0;
+}
+.custom-place-row input:focus {
+    border-color: var(--lime);
+    box-shadow: 0 0 0 3px rgba(199, 243, 107, 0.16);
+}
+.custom-place-row .secondary-button {
+    width: 100%;
+    padding: 13px 18px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.custom-place-locate {
+    display: block;
+    margin-top: 8px;
+    padding: 0;
+    color: var(--blue);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.custom-place-locate:hover {
+    color: var(--lime);
+}
+.custom-place-status {
+    min-height: 14px;
+    margin: 6px 0 0;
+    font-size: 9px;
+    color: var(--orange);
+    letter-spacing: 0.04em;
+}
+/* Lista desplegable de sugerencias que aparece mientras se escribe. */
+.custom-place-suggestions {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    border: 1px solid #53615b;
+    background: #1b2725;
+    max-height: 160px;
+    overflow-y: auto;
+}
+.custom-place-suggestion {
+    padding: 8px;
+    font-size: 10px;
+    line-height: 1.35;
+    color: var(--paper);
+    cursor: pointer;
+    border-bottom: 1px solid #2c3a37;
+}
+.custom-place-suggestion:last-child {
+    border-bottom: 0;
+}
+.custom-place-suggestion:hover {
+    background: rgba(199, 243, 107, 0.14);
+    color: var(--lime);
+}
+.custom-place-result {
+    margin-top: 8px;
+    padding: 8px;
+    background: #1b2725;
+    border: 1px solid #53615b;
+}
+.custom-place-name {
+    margin: 0 0 8px;
+    font-size: 10px;
+    color: var(--paper);
+    line-height: 1.4;
+}
+.custom-place-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+.custom-place-actions .secondary-button {
+    padding: 8px 6px;
+    font-size: 9px;
+}
 .mission-label {
     font-size: 9px;
     color: #8f9a91;
