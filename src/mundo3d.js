@@ -89,11 +89,52 @@ function m3dConstruirCarretera(puntos) {
 }
 
 
+// Genera una textura de ventanas iluminadas (algunas encendidas al azar) usando
+// un canvas 2D, en vez de una sola malla plana: da mucha más sensación de detalle
+// a los edificios sin costar más geometría.
+let m3dTexturaVentanas;
+function m3dObtenerTexturaVentanas() {
+    if (m3dTexturaVentanas) return m3dTexturaVentanas;
+
+    const lienzo = document.createElement('canvas');
+    lienzo.width = 128;
+    lienzo.height = 256;
+    const contexto = lienzo.getContext('2d');
+
+    contexto.fillStyle = '#20262c';
+    contexto.fillRect(0, 0, lienzo.width, lienzo.height);
+
+    const columnas = 6;
+    const filas = 12;
+    const anchoVentana = lienzo.width / columnas;
+    const altoVentana = lienzo.height / filas;
+
+    for (let fila = 0; fila < filas; fila += 1) {
+        for (let columna = 0; columna < columnas; columna += 1) {
+            const encendida = Math.random() < 0.35;
+            contexto.fillStyle = encendida ? '#f6e6a8' : '#12181c';
+            contexto.fillRect(
+                columna * anchoVentana + anchoVentana * 0.18,
+                fila * altoVentana + altoVentana * 0.22,
+                anchoVentana * 0.64,
+                altoVentana * 0.56
+            );
+        }
+    }
+
+    const textura = new THREE.CanvasTexture(lienzo);
+    textura.wrapS = THREE.RepeatWrapping;
+    textura.wrapT = THREE.RepeatWrapping;
+    m3dTexturaVentanas = textura;
+    return textura;
+}
+
 function m3dConstruirEdificios(puntos) {
     const grupo = new THREE.Group();
     const paleta = [0x8a97a3, 0x5f7a8a, 0xb98a5e, 0x7a8f6a, 0x9c7f9e, 0x6d6d7a, 0xa3876a];
     const separacionMinima = 34;
     let acumulado = separacionMinima;
+    const texturaVentanas = m3dObtenerTexturaVentanas();
 
     for (let indice = 1; indice < puntos.length; indice += 1) {
         const anterior = puntos[indice - 1];
@@ -116,9 +157,23 @@ function m3dConstruirEdificios(puntos) {
             const altura = 6 + Math.random() * 32;
             const color = paleta[Math.floor(Math.random() * paleta.length)];
 
+            // Copia la textura de ventanas para poder repetirla distinto en cada fachada
+            // según la altura del edificio, sin regenerar el canvas cada vez.
+            const texturaFachada = texturaVentanas.clone();
+            texturaFachada.needsUpdate = true;
+            texturaFachada.repeat.set(Math.max(1, Math.round(ancho / 4)), Math.max(1, Math.round(altura / 5)));
+
+            const materialFachada = new THREE.MeshStandardMaterial({
+                color,
+                map: texturaFachada,
+                roughness: 0.8,
+                metalness: 0.05
+            });
+            const materialTecho = new THREE.MeshStandardMaterial({ color, roughness: 0.9 });
+
             const edificio = new THREE.Mesh(
                 new THREE.BoxGeometry(ancho, altura, profundidad),
-                new THREE.MeshStandardMaterial({ color, roughness: 0.85 })
+                [materialFachada, materialFachada, materialTecho, materialTecho, materialFachada, materialFachada]
             );
             edificio.position.set(
                 punto.x + normal.x * distanciaLateral * lado,
@@ -129,14 +184,65 @@ function m3dConstruirEdificios(puntos) {
             edificio.castShadow = true;
             edificio.receiveShadow = true;
             grupo.add(edificio);
+        });
+    }
 
-            // Ventanas simples como una malla emisiva tenue encima del edificio.
-            const remate = new THREE.Mesh(
-                new THREE.BoxGeometry(ancho * 0.9, 0.6, profundidad * 0.9),
-                new THREE.MeshStandardMaterial({ color: 0xf3e9c8, emissive: 0x2b2410, roughness: 0.6 })
+    return grupo;
+}
+
+// Árboles low-poly (tronco + copa) intercalados junto a la carretera para dar
+// más profundidad y vida a la escena, sin afectar el rendimiento.
+function m3dConstruirArboles(puntos) {
+    const grupo = new THREE.Group();
+    const materialTronco = new THREE.MeshStandardMaterial({ color: 0x6b4a34, roughness: 0.95 });
+    const paletaCopas = [0x4c7a3f, 0x3f6b3a, 0x5a8a49];
+    const separacionMinima = 16;
+    let acumulado = 0;
+
+    for (let indice = 1; indice < puntos.length; indice += 1) {
+        const anterior = puntos[indice - 1];
+        const punto = puntos[indice];
+        acumulado += Math.hypot(punto.x - anterior.x, punto.z - anterior.z);
+        if (acumulado < separacionMinima) continue;
+        acumulado = 0;
+
+        const direccion = new THREE.Vector2(punto.x - anterior.x, punto.z - anterior.z);
+        if (direccion.lengthSq() === 0) continue;
+        direccion.normalize();
+        const normal = new THREE.Vector2(-direccion.y, direccion.x);
+
+        [-1, 1].forEach((lado) => {
+            if (Math.random() < 0.55) return;
+
+            const distanciaLateral = M3D_ANCHO_CARRETERA / 2 + 3 + Math.random() * 6;
+            const alturaTronco = 1.6 + Math.random() * 0.8;
+            const radioCopa = 1.4 + Math.random() * 1.3;
+            const x = punto.x + normal.x * distanciaLateral * lado;
+            const z = punto.z + normal.y * distanciaLateral * lado;
+
+            const arbol = new THREE.Group();
+
+            const tronco = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.18, 0.24, alturaTronco, 6),
+                materialTronco
             );
-            remate.position.set(edificio.position.x, altura + 0.3, edificio.position.z);
-            grupo.add(remate);
+            tronco.position.y = alturaTronco / 2;
+            tronco.castShadow = true;
+            arbol.add(tronco);
+
+            const copa = new THREE.Mesh(
+                new THREE.ConeGeometry(radioCopa, radioCopa * 1.9, 7),
+                new THREE.MeshStandardMaterial({
+                    color: paletaCopas[Math.floor(Math.random() * paletaCopas.length)],
+                    roughness: 0.9
+                })
+            );
+            copa.position.y = alturaTronco + radioCopa * 0.85;
+            copa.castShadow = true;
+            arbol.add(copa);
+
+            arbol.position.set(x, 0, z);
+            grupo.add(arbol);
         });
     }
 
@@ -171,7 +277,13 @@ function m3dCrearCarro() {
 
     const cuerpo = new THREE.Mesh(
         new THREE.BoxGeometry(2, 0.9, 4.2),
-        new THREE.MeshStandardMaterial({ color: colores.cuerpo, roughness: 0.45, metalness: 0.25 })
+        new THREE.MeshPhysicalMaterial({
+            color: colores.cuerpo,
+            roughness: 0.32,
+            metalness: 0.4,
+            clearcoat: 0.6,
+            clearcoatRoughness: 0.25
+        })
     );
     cuerpo.position.y = 0.65;
     cuerpo.castShadow = true;
@@ -179,11 +291,25 @@ function m3dCrearCarro() {
 
     const cabina = new THREE.Mesh(
         new THREE.BoxGeometry(1.5, 0.65, 2),
-        new THREE.MeshStandardMaterial({ color: colores.cabina, roughness: 0.35 })
+        new THREE.MeshPhysicalMaterial({
+            color: colores.cabina,
+            roughness: 0.15,
+            metalness: 0.1,
+            transparent: true,
+            opacity: 0.88
+        })
     );
     cabina.position.set(0, 1.28, -0.25);
     cabina.castShadow = true;
     grupo.add(cabina);
+
+    // Espejos laterales simples: aportan silueta sin agregar peso a la escena.
+    const materialEspejo = new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.4, metalness: 0.6 });
+    [-1, 1].forEach((lado) => {
+        const espejo = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.32), materialEspejo);
+        espejo.position.set(lado * 1.05, 0.95, 0.65);
+        grupo.add(espejo);
+    });
 
     const posicionesRuedas = [
         [-0.95, 0.4, 1.35], [0.95, 0.4, 1.35],
@@ -238,6 +364,26 @@ function m3dCrearMarcador(punto, color) {
     return grupo;
 }
 
+// Genera una textura de cielo con degradado (horizonte claro a cenit azul)
+// usando un canvas: se ve mucho más natural que un color plano de fondo.
+function m3dCrearTexturaCielo() {
+    const lienzo = document.createElement('canvas');
+    lienzo.width = 2;
+    lienzo.height = 256;
+    const contexto = lienzo.getContext('2d');
+
+    const degradado = contexto.createLinearGradient(0, 0, 0, lienzo.height);
+    degradado.addColorStop(0, '#4f8fd6');
+    degradado.addColorStop(0.55, '#8fc7e8');
+    degradado.addColorStop(1, '#dff1e6');
+    contexto.fillStyle = degradado;
+    contexto.fillRect(0, 0, lienzo.width, lienzo.height);
+
+    const textura = new THREE.CanvasTexture(lienzo);
+    textura.colorSpace = THREE.SRGBColorSpace;
+    return textura;
+}
+
 // Prepara escena, cámara, luces y todos los elementos del mundo a partir
 // de la ruta de calles activa (la misma que ya se ve en el mapa 2D).
 function m3dInicializarEscena() {
@@ -245,8 +391,8 @@ function m3dInicializarEscena() {
     m3dLlegoAlDestino = false;
 
     m3dEscena = new THREE.Scene();
-    m3dEscena.background = new THREE.Color(0x8fc7e8);
-    m3dEscena.fog = new THREE.Fog(0x8fc7e8, 90, 420);
+    m3dEscena.background = m3dCrearTexturaCielo();
+    m3dEscena.fog = new THREE.Fog(0xbfdcec, 100, 420);
 
     const ancho = m3dContenedor.clientWidth;
     const alto = m3dContenedor.clientHeight;
@@ -256,16 +402,23 @@ function m3dInicializarEscena() {
     m3dRenderizador.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     m3dRenderizador.setSize(ancho, alto);
     m3dRenderizador.shadowMap.enabled = true;
+    m3dRenderizador.shadowMap.type = THREE.PCFSoftShadowMap;
+    m3dRenderizador.toneMapping = THREE.ACESFilmicToneMapping;
+    m3dRenderizador.toneMappingExposure = 1.05;
+    m3dRenderizador.outputColorSpace = THREE.SRGBColorSpace;
     m3dContenedor.innerHTML = '';
     m3dContenedor.appendChild(m3dRenderizador.domElement);
 
-    const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.55);
-    m3dEscena.add(luzAmbiente);
+    // La luz de hemisferio simula el rebote de luz entre cielo y suelo:
+    // da un ambiente mucho más natural que solo una luz ambiental plana.
+    const luzHemisferio = new THREE.HemisphereLight(0xbfe0ff, 0x3a4a35, 0.6);
+    m3dEscena.add(luzHemisferio);
 
-    const luzSol = new THREE.DirectionalLight(0xfff3d6, 1.05);
+    const luzSol = new THREE.DirectionalLight(0xfff3d6, 1.15);
     luzSol.position.set(120, 180, 80);
     luzSol.castShadow = true;
     luzSol.shadow.mapSize.set(2048, 2048);
+    luzSol.shadow.bias = -0.0004;
     luzSol.shadow.camera.left = -200;
     luzSol.shadow.camera.right = 200;
     luzSol.shadow.camera.top = 200;
@@ -275,6 +428,7 @@ function m3dInicializarEscena() {
     m3dEscena.add(m3dConstruirSuelo(m3dPuntosRuta));
     m3dEscena.add(m3dConstruirCarretera(m3dPuntosRuta));
     m3dEscena.add(m3dConstruirEdificios(m3dPuntosRuta));
+    m3dEscena.add(m3dConstruirArboles(m3dPuntosRuta));
     m3dEscena.add(m3dCrearMarcador(m3dPuntosRuta[0], 0x4f9eb0));
     m3dPosicionMeta = m3dPuntosRuta[m3dPuntosRuta.length - 1];
     m3dEscena.add(m3dCrearMarcador(m3dPosicionMeta, 0xd9463e));
