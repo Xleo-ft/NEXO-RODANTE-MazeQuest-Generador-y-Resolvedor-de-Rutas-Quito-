@@ -1,4 +1,4 @@
-// ===\r\n// ALGORITMO: búsqueda en anchura (BFS) sobre el grafo de lugares.\r\n// ===
+// ===\r\n// ALGORITMO: búsqueda en anchuras (BFS) sobre el grafo de lugares.\r\n// ===
 
 // Encuentra el camino más corto entre dos lugares usando el algoritmo BFS.
 function buscarAnchura(inicio, fin) {
